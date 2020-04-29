@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="dnssd" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Windows Debug">
+				<Option platforms="Windows;" />
+				<Option output="lib/pml_dnssdd" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-DBUILD_DLL" />
+					<Add option="-D__WIN32__" />
+					<Add option="-DDLL_EXPORTS" />
+					<Add option="-DDNSSD_DLL" />
+					<Add directory="mdnssd" />
+				</Compiler>
+				<Linker>
+					<Add library="user32" />
+					<Add library="pml_logd" />
+					<Add library="dnssd" />
+					<Add library="Ws2_32" />
+					<Add library="Iphlpapi" />
+					<Add directory="mdnssd/windows" />
+				</Linker>
+			</Target>
+			<Target title="Windows Release">
+				<Option platforms="Windows;" />
+				<Option output="lib/pml_dnssd" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-DBUILD_DLL" />
+					<Add option="-D__WIN32__" />
+					<Add option="-DDLL_EXPORTS" />
+					<Add option="-DDNSSD_DLL" />
+					<Add directory="mdnssd" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="user32" />
+					<Add library="pml_log" />
+					<Add library="dnssd" />
+					<Add library="Ws2_32" />
+					<Add library="Iphlpapi" />
+					<Add directory="mdnssd/windows" />
+				</Linker>
+			</Target>
+			<Target title="Linux Debug">
+				<Option platforms="Unix;" />
+				<Option output="lib/dnssdd" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-DBUILD_DLL" />
+					<Add option="-D__WIN32__" />
+					<Add option="-DDLL_EXPORTS" />
+					<Add option="-DDNSSD_DLL" />
+					<Add directory="mdnssd" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="user32" />
+					<Add library="pml_log" />
+					<Add library="dnssd" />
+					<Add library="Ws2_32" />
+					<Add library="Iphlpapi" />
+					<Add library="user32" />
+					<Add library="pml_log" />
+					<Add library="dnssd" />
+					<Add library="Ws2_32" />
+					<Add library="Iphlpapi" />
+					<Add directory="mdnssd/windows" />
+				</Linker>
+			</Target>
+			<Target title="Linux Release">
+				<Option platforms="Unix;" />
+				<Option output="lib/dnssd" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-DBUILD_DLL" />
+					<Add option="-D__WIN32__" />
+					<Add directory="mdnssd" />
+				</Compiler>
+				<Linker>
+					<Add library="user32" />
+					<Add library="logd" />
+					<Add library="dnssd" />
+					<Add library="Ws2_32" />
+					<Add library="Iphlpapi" />
+					<Add directory="mdnssd/windows" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++11" />
+			<Add directory="$(#pml_log.include)" />
+			<Add directory="./include" />
+		</Compiler>
+		<Linker>
+			<Add directory="$(#pml_log.lib)" />
+		</Linker>
+		<Unit filename="include/avahibrowser.h">
+			<Option target="Linux Debug" />
+			<Option target="Linux Release" />
+		</Unit>
+		<Unit filename="include/avahipublisher.h">
+			<Option target="Linux Debug" />
+			<Option target="Linux Release" />
+		</Unit>
+		<Unit filename="include/bonjourbrowser.h">
+			<Option target="Windows Debug" />
+			<Option target="Windows Release" />
+		</Unit>
+		<Unit filename="include/bonjourpublisher.h">
+			<Option target="Windows Debug" />
+			<Option target="Windows Release" />
+		</Unit>
+		<Unit filename="include/dnsdlldefine.h" />
+		<Unit filename="include/dnssd.h" />
+		<Unit filename="include/mdns.h" />
+		<Unit filename="include/zcposter.h" />
+		<Unit filename="src/dnssd.cpp" />
+		<Unit filename="src/gnu/avahibrowser.cpp">
+			<Option target="Linux Debug" />
+			<Option target="Linux Release" />
+		</Unit>
+		<Unit filename="src/gnu/avahipublisher.cpp">
+			<Option target="Linux Debug" />
+			<Option target="Linux Release" />
+		</Unit>
+		<Unit filename="src/windows/bonjourbrowser.cpp">
+			<Option target="Windows Debug" />
+			<Option target="Windows Release" />
+		</Unit>
+		<Unit filename="src/windows/bonjourpublisher.cpp">
+			<Option target="Windows Debug" />
+			<Option target="Windows Release" />
+		</Unit>
+		<Unit filename="src/zcposter.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
