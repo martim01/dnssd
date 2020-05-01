@@ -79,11 +79,6 @@
 					<Add library="dnssd" />
 					<Add library="Ws2_32" />
 					<Add library="Iphlpapi" />
-					<Add library="user32" />
-					<Add library="pml_log" />
-					<Add library="dnssd" />
-					<Add library="Ws2_32" />
-					<Add library="Iphlpapi" />
 					<Add directory="mdnssd/windows" />
 				</Linker>
 			</Target>
@@ -114,11 +109,11 @@
 		</Build>
 		<Compiler>
 			<Add option="-std=c++11" />
-			<Add directory="$(#pml_log.include)" />
+			<Add directory="../log/include" />
 			<Add directory="./include" />
 		</Compiler>
 		<Linker>
-			<Add directory="$(#pml_log.lib)" />
+			<Add directory="../log/lib" />
 		</Linker>
 		<Unit filename="include/avahibrowser.h">
 			<Option target="Linux Debug" />
