@@ -2,6 +2,7 @@
 #include "log.h"
 
 using namespace std;
+using namespace pml;
 
 void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, AVAHI_GCC_UNUSED void *userdata)
 {
@@ -67,14 +68,36 @@ void ServicePublisher::CreateServices()
         {
             Log::Get(Log::LOG_DEBUG) << "ServicePublisher: Adding service " << m_psName << endl;
 
-            AvahiStringList* pList = GetTxtList();
-            if(!pList)
+            if(m_mTxt.empty() == false)
             {
-                Log::Get(Log::LOG_ERROR) << "ServicePublisher: Failed to create list" << endl;
+                AvahiStringList* pList = GetTxtList();
+                if(!pList)
+                {
+
+                    Log::Get(Log::LOG_ERROR) << "ServicePublisher: Failed to create list" << endl;
+                }
+                else
+                {
+                    if ((ret = avahi_entry_group_add_service_strlst(m_pGroup, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, (AvahiPublishFlags)0, m_psName, m_sService.c_str(), NULL, NULL, m_nPort, pList)) < 0)
+                    {
+                        if (ret == AVAHI_ERR_COLLISION)
+                        {
+                            Collision();
+                            return;
+                        }
+                        else
+                        {
+                            Log::Get(Log::LOG_ERROR) << "ServicePublisher: Failed to add '" << m_sService << "' service: " << avahi_strerror(ret) << endl;
+                            ThreadQuit();
+                            return;
+                        }
+                    }
+                    avahi_string_list_free(pList);
+                }
             }
             else
             {
-                if ((ret = avahi_entry_group_add_service_strlst(m_pGroup, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, (AvahiPublishFlags)0, m_psName, m_sService.c_str(), NULL, NULL, m_nPort, pList)) < 0)
+                if ((ret = avahi_entry_group_add_service(m_pGroup, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, (AvahiPublishFlags)0, m_psName, m_sService.c_str(), NULL, NULL, m_nPort)) < 0)
                 {
                     if (ret == AVAHI_ERR_COLLISION)
                     {
@@ -88,9 +111,7 @@ void ServicePublisher::CreateServices()
                         return;
                     }
                 }
-            avahi_string_list_free(pList);
             }
-
             /* Tell the server to register the service */
             if ((ret = avahi_entry_group_commit(m_pGroup)) < 0)
             {
@@ -141,7 +162,10 @@ void ServicePublisher::Stop()
 
 void ServicePublisher::ThreadQuit()
 {
-    avahi_threaded_poll_quit(m_pThreadedPoll);
+    if(m_pThreadedPoll)
+    {
+        avahi_threaded_poll_quit(m_pThreadedPoll);
+    }
     m_pThreadedPoll = NULL;
     Stop();
 }

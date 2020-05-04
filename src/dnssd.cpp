@@ -38,7 +38,7 @@ Browser::~Browser()
 Publisher::Publisher(std::string sName, std::string sService, unsigned short nPort, std::string sHostname) :
     m_pPublisher(std::unique_ptr<ServicePublisher>(new ServicePublisher(sName, sService, nPort, sHostname)))
 {
-
+    //m_pPublisher->Start();
 }
 
 Publisher::~Publisher()
@@ -66,8 +66,8 @@ void Publisher::AddTxt(std::string sKey, std::string sValue, bool bModify)
     m_pPublisher->AddTxt(sKey,sValue, bModify);
 }
 
-void Publisher::RemoveTxt(std::string sKey, std::string sValue, bool bModify)
+void Publisher::RemoveTxt(std::string sKey, bool bModify)
 {
-    m_pPublisher->RemoveTxt(sKey, sValue, bModify);
+    m_pPublisher->RemoveTxt(sKey, bModify);
 }
 

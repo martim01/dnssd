@@ -4,10 +4,10 @@
 #include "zcposter.h"
 #include "mdns.h"
 #include <mutex>
-#include "nodeapi.h"
 
 
 using namespace std;
+using namespace pml;
 
 void client_callback(AvahiClient * pClient, AvahiClientState state, AVAHI_GCC_UNUSED void * userdata)
 {

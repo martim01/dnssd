@@ -57,7 +57,7 @@
 			</Target>
 			<Target title="Linux Debug">
 				<Option platforms="Unix;" />
-				<Option output="lib/dnssdd" prefix_auto="1" extension_auto="1" />
+				<Option output="lib/pml_dnssdd" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -67,24 +67,19 @@
 					<Add option="-O2" />
 					<Add option="-Wall" />
 					<Add option="-DBUILD_DLL" />
-					<Add option="-D__WIN32__" />
 					<Add option="-DDLL_EXPORTS" />
 					<Add option="-DDNSSD_DLL" />
 					<Add directory="mdnssd" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="user32" />
-					<Add library="pml_log" />
-					<Add library="dnssd" />
-					<Add library="Ws2_32" />
-					<Add library="Iphlpapi" />
+					<Add library="pml_logd" />
 					<Add directory="mdnssd/windows" />
 				</Linker>
 			</Target>
 			<Target title="Linux Release">
 				<Option platforms="Unix;" />
-				<Option output="lib/dnssd" prefix_auto="1" extension_auto="1" />
+				<Option output="lib/pml_dnssd" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -94,15 +89,11 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-DBUILD_DLL" />
-					<Add option="-D__WIN32__" />
-					<Add directory="mdnssd" />
+					<Add option="-DDNSSD_DLL" />
 				</Compiler>
 				<Linker>
-					<Add library="user32" />
-					<Add library="logd" />
-					<Add library="dnssd" />
-					<Add library="Ws2_32" />
-					<Add library="Iphlpapi" />
+					<Add option="`pkg-config --libs avahi-client`" />
+					<Add library="pml_log" />
 					<Add directory="mdnssd/windows" />
 				</Linker>
 			</Target>

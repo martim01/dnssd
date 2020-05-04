@@ -21,7 +21,7 @@ namespace pml
             void Modify();
 
             void AddTxt(std::string sKey, std::string sValue, bool bModify);
-            void RemoveTxt(std::string sKey, std::string sValue, bool bModify);
+            void RemoveTxt(std::string sKey, bool bModify);
 
 
         private:
