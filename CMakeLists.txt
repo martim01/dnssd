@@ -1,19 +1,19 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(pml_dnssd LANGUAGES CXX)
 
-list(APPEND SOURCES "src/dnssd.cpp"  "src/zcposter.cpp")
+list(APPEND DNS_SOURCES "src/dnssd.cpp"  "src/zcposter.cpp")
 
 #os specific
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	list(APPEND SOURCES "src/gnu/avahibrowser.cpp" "src/gnu/avahipublisher.cpp")
+	list(APPEND DNS_SOURCES "src/gnu/avahibrowser.cpp" "src/gnu/avahipublisher.cpp")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	list(APPEND SOURCES "src/windows/bonjourbrowser.cpp" "src/windows/bonjourpublisher.cpp")
+	list(APPEND DNS_SOURCES "src/windows/bonjourbrowser.cpp" "src/windows/bonjourpublisher.cpp")
 endif()
 
 
-add_library(pml_dnssd SHARED ${SOURCES})
+add_library(pml_dnssd SHARED ${DNS_SOURCES})
 
 target_include_directories(pml_dnssd PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(pml_dnssd PUBLIC ${PROJECT_SOURCE_DIR}/../log/include)
@@ -29,7 +29,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	target_link_libraries(pml_dnssd pthread)
 endif()
 
-set_target_properties(pml_dnssd PROPERTIES LIBRARY_OUTPUT_DIRECTORY "../lib/")
+set_target_properties(pml_dnssd PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../lib/)
 
 #linux specific
 #if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
