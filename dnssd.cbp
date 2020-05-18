@@ -90,6 +90,7 @@
 					<Add option="-g" />
 					<Add option="-DBUILD_DLL" />
 					<Add option="-DDNSSD_DLL" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="`pkg-config --libs avahi-client`" />
