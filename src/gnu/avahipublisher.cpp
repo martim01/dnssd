@@ -2,7 +2,7 @@
 #include "log.h"
 
 using namespace std;
-using namespace pml;
+using namespace pml::dnssd;
 
 void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, AVAHI_GCC_UNUSED void *userdata)
 {
@@ -26,7 +26,7 @@ void ServicePublisher::EntryGroupCallback(AvahiEntryGroup *pGroup, AvahiEntryGro
     {
     case AVAHI_ENTRY_GROUP_ESTABLISHED :
         /* The entry group has been established successfully */
-        pmlLog() << "mDNS:ServicePublisher\tService '" << m_psName << "' successfully established.";
+        pmlLog(pml::LOG_INFO) << "pml::dnssd:\t" << "ServicePublisher: Service '" << m_psName << "' successfully established." ;
         break;
     case AVAHI_ENTRY_GROUP_COLLISION :
     {
@@ -34,7 +34,7 @@ void ServicePublisher::EntryGroupCallback(AvahiEntryGroup *pGroup, AvahiEntryGro
         break;
     }
     case AVAHI_ENTRY_GROUP_FAILURE :
-        pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tEntry group failure: " << avahi_strerror(avahi_client_errno(avahi_entry_group_get_client(m_pGroup)));
+        pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Entry group failure: " << avahi_strerror(avahi_client_errno(avahi_entry_group_get_client(m_pGroup))) ;
         /* Some kind of failure happened while we were registering our services */
         ThreadQuit();
         break;
@@ -56,7 +56,7 @@ void ServicePublisher::CreateServices()
         {
             if (!(m_pGroup = avahi_entry_group_new(m_pClient, entry_group_callback, reinterpret_cast<void*>(this))))
             {
-                pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tavahi_entry_group_new() failed: " << avahi_strerror(avahi_client_errno(m_pClient));
+                pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: avahi_entry_group_new() failed: " << avahi_strerror(avahi_client_errno(m_pClient)) ;
                 ThreadQuit();
                 return;
             }
@@ -66,38 +66,16 @@ void ServicePublisher::CreateServices()
          * because it was reset previously, add our entries.  */
         if (avahi_entry_group_is_empty(m_pGroup))
         {
-            pmlLog(LOG_DEBUG) << "mDNS:ServicePublisher\tAdding service " << m_psName;
+            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServicePublisher: Adding service " << m_psName ;
 
-            if(m_mTxt.empty() == false)
+            AvahiStringList* pList = GetTxtList();
+            if(!pList)
             {
-                AvahiStringList* pList = GetTxtList();
-                if(!pList)
-                {
-
-                    pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to create list";
-                }
-                else
-                {
-                    if ((ret = avahi_entry_group_add_service_strlst(m_pGroup, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, (AvahiPublishFlags)0, m_psName, m_sService.c_str(), NULL, NULL, m_nPort, pList)) < 0)
-                    {
-                        if (ret == AVAHI_ERR_COLLISION)
-                        {
-                            Collision();
-                            return;
-                        }
-                        else
-                        {
-                            pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to add '" << m_sService << "' service: " << avahi_strerror(ret);
-                            ThreadQuit();
-                            return;
-                        }
-                    }
-                    avahi_string_list_free(pList);
-                }
+                pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Failed to create list" ;
             }
             else
             {
-                if ((ret = avahi_entry_group_add_service(m_pGroup, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, (AvahiPublishFlags)0, m_psName, m_sService.c_str(), NULL, NULL, m_nPort)) < 0)
+                if ((ret = avahi_entry_group_add_service_strlst(m_pGroup, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, (AvahiPublishFlags)0, m_psName, m_sService.c_str(), NULL, NULL, m_nPort, pList)) < 0)
                 {
                     if (ret == AVAHI_ERR_COLLISION)
                     {
@@ -106,16 +84,18 @@ void ServicePublisher::CreateServices()
                     }
                     else
                     {
-                        pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to add '" << m_sService << "' service: " << avahi_strerror(ret);
+                        pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Failed to add '" << m_sService << "' service: " << avahi_strerror(ret) ;
                         ThreadQuit();
                         return;
                     }
                 }
+            avahi_string_list_free(pList);
             }
+
             /* Tell the server to register the service */
             if ((ret = avahi_entry_group_commit(m_pGroup)) < 0)
             {
-                pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to commit entry group: " << avahi_strerror(ret);
+                pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Failed to commit entry group: " << avahi_strerror(ret);
                 ThreadQuit();
                 return;
             }
@@ -131,7 +111,7 @@ void ServicePublisher::Collision()
     char *n = avahi_alternative_service_name(m_psName);
     avahi_free(m_psName);
     m_psName = n;
-    pmlLog(LOG_DEBUG) << "mDNS:ServicePublisher\tService name collision, renaming service to " << m_psName;
+    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServicePublisher: Service name collision, renaming service to " << m_psName ;
     avahi_entry_group_reset(m_pGroup);
     CreateServices();
 }
@@ -162,10 +142,7 @@ void ServicePublisher::Stop()
 
 void ServicePublisher::ThreadQuit()
 {
-    if(m_pThreadedPoll)
-    {
-        avahi_threaded_poll_quit(m_pThreadedPoll);
-    }
+    avahi_threaded_poll_quit(m_pThreadedPoll);
     m_pThreadedPoll = NULL;
     Stop();
 }
@@ -178,14 +155,14 @@ void ServicePublisher::ClientCallback(AvahiClient* pClient, AvahiClientState sta
         switch (state)
         {
         case AVAHI_CLIENT_S_RUNNING:
-            pmlLog(LOG_DEBUG) << "mDNS:ServicePublisher\tClient: Running";
+            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServicePublisher: Client: Running" ;
             /* The server has startup successfully and registered its host
              * name on the network, so it's time to create our services */
              m_pClient = pClient;
             CreateServices();
             break;
         case AVAHI_CLIENT_FAILURE:
-            pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tClient failure: " <<  avahi_strerror(avahi_client_errno(pClient));
+            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Client failure: " <<  avahi_strerror(avahi_client_errno(pClient)) ;
             ThreadQuit();
             break;
         case AVAHI_CLIENT_S_COLLISION:
@@ -197,14 +174,14 @@ void ServicePublisher::ClientCallback(AvahiClient* pClient, AvahiClientState sta
              * might be caused by a host name change. We need to wait
              * for our own records to register until the host name is
              * properly esatblished. */
-             pmlLog(LOG_DEBUG) << "mDNS:ServicePublisher\tClient: Collison or registering";
+             pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServicePublisher: Client: Collison or registering" ;
             if (m_pGroup)
             {
                 avahi_entry_group_reset(m_pGroup);
             }
             break;
         case AVAHI_CLIENT_CONNECTING:
-            pmlLog(LOG_DEBUG) << "mDNS:ServicePublisher\tClient: Connecting";
+            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServicePublisher: Client: Connecting" ;
         }
     }
 }
@@ -219,7 +196,7 @@ bool ServicePublisher::Start()
     /* Allocate main loop object */
     if (!(m_pThreadedPoll = avahi_threaded_poll_new()))
     {
-        pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to create thread poll object.";
+        pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Failed to create thread poll object." ;
         Stop();
         return false;
     }
@@ -230,11 +207,11 @@ bool ServicePublisher::Start()
     /* Check wether creating the client object succeeded */
     if (!m_pClient)
     {
-        pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to create client: " << avahi_strerror(error);
+        pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Failed to create client: " << avahi_strerror(error) ;
         Stop();
         return false;
     }
-    pmlLog(LOG_DEBUG) << "mDNS:ServicePublisher\tStarted";
+    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServicePublisher: Started" ;
     /* After 10s do some weird modification to the service */
     //avahi_thread_poll_get(thread_poll)->timeout_new(avahi_thread_poll_get(thread_poll),avahi_elapse_time(&tv, 1000*10, 0),modify_callback,client);
     /* Run the main loop */
@@ -242,7 +219,7 @@ bool ServicePublisher::Start()
     return true;
 }
 
-ServicePublisher::ServicePublisher(string sName, string sService, unsigned short nPort, std::string sHostname) :
+ServicePublisher::ServicePublisher(const std::string& sName, const std::string& sService, unsigned short nPort, const std::string& sHostname) :
     m_pClient(0),
     m_pGroup(0),
     m_pThreadedPoll(0),
@@ -252,7 +229,7 @@ ServicePublisher::ServicePublisher(string sName, string sService, unsigned short
     m_sHostname(sHostname),
     m_psName(0)
 {
-    pmlLog(LOG_DEBUG) << m_sHostname;
+    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << m_sHostname;
 
 }
 
@@ -263,7 +240,7 @@ ServicePublisher::~ServicePublisher()
 
 
 
-void ServicePublisher::AddTxt(string sKey, string sValue, bool bModify)
+void ServicePublisher::AddTxt(const std::string& sKey, const std::string& sValue, bool bModify)
 {
     m_mTxt[sKey] = sValue;
     if(bModify)
@@ -272,7 +249,7 @@ void ServicePublisher::AddTxt(string sKey, string sValue, bool bModify)
     }
 }
 
-void ServicePublisher::RemoveTxt(string sKey, bool bModify)
+void ServicePublisher::RemoveTxt(const std::string& sKey, bool bModify)
 {
     m_mTxt.erase(sKey);
     if(bModify)
@@ -284,11 +261,11 @@ void ServicePublisher::RemoveTxt(string sKey, bool bModify)
 
 AvahiStringList* ServicePublisher::GetTxtList()
 {
-    pmlLog(LOG_DEBUG) << "mDNS:ServicePublisher\tCreate string list";
+    pmlLog(pml::LOG_TRACE) << "pml::dnssd:\t" << "ServicePublisher: Create string list" ;
     AvahiStringList* pList = NULL;
     for(map<string, string>::iterator itTxt = m_mTxt.begin(); itTxt != m_mTxt.end(); ++itTxt)
     {
-        pmlLog(LOG_DEBUG) << itTxt->first << "=" << itTxt->second;
+        pmlLog(pml::LOG_TRACE) << "pml::dnssd:\t" << itTxt->first << "=" << itTxt->second ;
         if(pList == NULL)
         {
             std::string sPair(itTxt->first);
@@ -306,13 +283,13 @@ AvahiStringList* ServicePublisher::GetTxtList()
 
 void ServicePublisher::Modify()
 {
-    pmlLog(LOG_DEBUG) << "Modify";
+    pmlLog(pml::LOG_TRACE) << "pml::dnssd:\t" << "Modify" ;
     if(m_pThreadedPoll)
     {
         AvahiStringList* pList = GetTxtList();
         if(!pList)
         {
-            pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to create list";
+            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Failed to create list" ;
         }
         else
         {
@@ -325,7 +302,7 @@ void ServicePublisher::Modify()
                 }
                 else
                 {
-                    pmlLog(LOG_ERROR) << "mDNS:ServicePublisher\tFailed to update '" << m_sService << "' service: " << avahi_strerror(ret);
+                    pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServicePublisher: Failed to update '" << m_sService << "' service: " << avahi_strerror(ret) ;
                     ThreadQuit();
                     return;
                 }

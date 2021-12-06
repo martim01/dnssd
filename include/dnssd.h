@@ -5,41 +5,44 @@
 
 namespace pml
 {
-
-    class ServiceBrowser;
-    class ServicePublisher;
-    class ZCPoster;
-
-    class DNSSD_EXPORT Browser
+    namespace dnssd
     {
-        public:
-            Browser();
-            ~Browser();
-            void AddService(const std::string& sService, std::shared_ptr<ZCPoster> pPoster);
-            void RemoveService(const std::string& sService);
+        class ServiceBrowser;
+        class ServicePublisher;
+        class ZCPoster;
 
-            bool StartBrowser();
+        class DNSSD_EXPORT Browser
+        {
+            public:
+                Browser(const std::string& sDomain=std::string());
+                ~Browser();
+                void AddService(const std::string& sService, std::shared_ptr<ZCPoster> pPoster);
+                void RemoveService(const std::string& sService);
 
-        private:
-            std::unique_ptr<ServiceBrowser> m_pBrowser;
+                bool StartBrowser();
 
-    };
+            private:
+                std::unique_ptr<ServiceBrowser> m_pBrowser;
 
-    class DNSSD_EXPORT Publisher
-    {
-        public:
-            Publisher(std::string sName, std::string sService, unsigned short nPort, std::string sHostname);
-            ~Publisher();
+        };
 
-            bool Start();
-            void Stop();
-            void Modify();
+        class DNSSD_EXPORT Publisher
+        {
+            public:
+                Publisher(const std::string& sName, const std::string& sService, unsigned short nPort, const std::string& sHostname);
 
-            void AddTxt(std::string sKey, std::string sValue, bool bModify);
-            void RemoveTxt(std::string sKey, bool bModify);
+                ~Publisher();
 
-        private:
-            std::unique_ptr<ServicePublisher> m_pPublisher;
+                bool Start();
+                void Stop();
+                void Modify();
+
+                void AddTxt(const std::string& sKey, const std::string& sValue, bool bModify);
+                void RemoveTxt(const std::string& sKey, bool bModify);
+
+            private:
+                std::unique_ptr<ServicePublisher> m_pPublisher;
+        };
     };
 };
 

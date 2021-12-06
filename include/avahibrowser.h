@@ -21,65 +21,68 @@ static void browse_callback(AvahiServiceBrowser *b, AvahiIfIndex interface, Avah
 
 namespace pml
 {
-    struct dnsService;
-    struct dnsInstance;
-    class ZCPoster;
-    class ServiceBrowser
+    namespace dnssd
     {
-    // Construction
-        public:
-            ServiceBrowser();
-            virtual ~ServiceBrowser();
+
+        struct dnsService;
+        struct dnsInstance;
+        class ZCPoster;
+        class ServiceBrowser
+        {
+        // Construction
+            public:
+                ServiceBrowser(const std::string& sDomain);
+                virtual ~ServiceBrowser();
 
 
-            void AddService(const std::string& sService, std::shared_ptr<ZCPoster> pPoster);
-            void RemoveService(const std::string& sService);
+                void AddService(const std::string& sService, std::shared_ptr<ZCPoster> pPoster);
+                void RemoveService(const std::string& sService);
 
-            bool StartBrowser();
-
-
+                bool StartBrowser();
 
 
-            void ClientCallback(AvahiClient* pClient, AvahiClientState state);
-            void TypeCallback(AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char* type, const char* domain);
-            void BrowseCallback(AvahiServiceBrowser* pBrowser, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char *name, const char *type, const char *domain);
-            void ResolveCallback(AvahiServiceResolver* pResolver, AvahiResolverEvent event,const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt);
-
-            void RemoveServiceInstance(const std::string& sService, const std::string& sInstance);
-
-            std::map<std::string, std::shared_ptr<dnsService> >::const_iterator GetServiceBegin();
-            std::map<std::string, std::shared_ptr<dnsService> >::const_iterator GetServiceEnd();
-            std::map<std::string, std::shared_ptr<dnsService> >::const_iterator FindService(const std::string& sService);
 
 
-        protected:
+                void ClientCallback(AvahiClient* pClient, AvahiClientState state);
+                void TypeCallback(AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char* type, const char* domain);
+                void BrowseCallback(AvahiServiceBrowser* pBrowser, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char *name, const char *type, const char *domain);
+                void ResolveCallback(AvahiServiceResolver* pResolver, AvahiResolverEvent event,const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt);
 
-            void Browse();
-            void DeleteAllServices();
-            bool Start(AvahiClient* pClient);
-            void Stop();
-            void CheckStop();
+                void RemoveServiceInstance(const std::string& sService, const std::string& sInstance);
 
-            std::shared_ptr<ZCPoster> GetPoster(const std::string& sService);
-
-            bool m_bFree;
-
-            std::mutex m_mutex;
-    //        void OnStop(wxCommandEvent& event);
+                std::map<std::string, std::shared_ptr<dnsService> >::const_iterator GetServiceBegin();
+                std::map<std::string, std::shared_ptr<dnsService> >::const_iterator GetServiceEnd();
+                std::map<std::string, std::shared_ptr<dnsService> >::const_iterator FindService(const std::string& sService);
 
 
-            AvahiThreadedPoll* m_pThreadedPoll;
-            AvahiClient * m_pClient;
-            AvahiServiceTypeBrowser* m_pTypeBrowser;
+            protected:
 
-            std::map<std::string, std::shared_ptr<ZCPoster> > m_mServiceBrowse;
+                void Browse();
+                void DeleteAllServices();
+                bool Start(AvahiClient* pClient);
+                void Stop();
+                void CheckStop();
 
-            bool m_bStarted;
-            bool m_bBrowsing;
-            unsigned long m_nWaitingOn;
-            std::set<AvahiServiceBrowser*> m_setBrowser;
-            std::map<std::string, AvahiServiceResolver*> m_mResolvers;
-            std::map<std::string, std::shared_ptr<dnsService> > m_mServices;
+                std::shared_ptr<ZCPoster> GetPoster(const std::string& sService);
+
+                std::string m_sDomain;
+
+                bool m_bFree;
+
+                std::mutex m_mutex;
+                AvahiThreadedPoll* m_pThreadedPoll;
+                AvahiClient * m_pClient;
+                AvahiServiceTypeBrowser* m_pTypeBrowser;
+
+                std::map<std::string, std::shared_ptr<ZCPoster> > m_mServiceBrowse;
+
+                bool m_bStarted;
+                bool m_bBrowsing;
+                unsigned long m_nWaitingOn;
+                std::set<AvahiServiceBrowser*> m_setBrowser;
+                std::map<std::string, AvahiServiceResolver*> m_mResolvers;
+                std::map<std::string, std::shared_ptr<dnsService> > m_mServices;
+        };
     };
 };
 

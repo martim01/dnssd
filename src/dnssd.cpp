@@ -7,10 +7,10 @@
 #include "avahipublisher.h"
 #endif // __WIN32__
 
-using namespace pml;
+using namespace pml::dnssd;
 
 
-Browser::Browser() : m_pBrowser(std::unique_ptr<ServiceBrowser>(new ServiceBrowser()))
+Browser::Browser(const std::string& sDomain) : m_pBrowser(std::unique_ptr<ServiceBrowser>(new ServiceBrowser(sDomain)))
 {
 
 }
@@ -35,10 +35,9 @@ Browser::~Browser()
 
 }
 
-Publisher::Publisher(std::string sName, std::string sService, unsigned short nPort, std::string sHostname) :
+Publisher::Publisher(const std::string& sName, const std::string& sService, unsigned short nPort, const std::string& sHostname) :
     m_pPublisher(std::unique_ptr<ServicePublisher>(new ServicePublisher(sName, sService, nPort, sHostname)))
 {
-    //m_pPublisher->Start();
 }
 
 Publisher::~Publisher()
@@ -61,12 +60,12 @@ void Publisher::Modify()
     m_pPublisher->Modify();
 }
 
-void Publisher::AddTxt(std::string sKey, std::string sValue, bool bModify)
+void Publisher::AddTxt(const std::string& sKey, const std::string& sValue, bool bModify)
 {
     m_pPublisher->AddTxt(sKey,sValue, bModify);
 }
 
-void Publisher::RemoveTxt(std::string sKey, bool bModify)
+void Publisher::RemoveTxt(const std::string& sKey, bool bModify)
 {
     m_pPublisher->RemoveTxt(sKey, bModify);
 }

@@ -5,7 +5,7 @@
 
 #include "log.h"
 using namespace std;
-using namespace pml;
+using namespace pml::dnssd;
 
 ServicePublisher::ServicePublisher(string sName, string sService, unsigned short nPort, string sHostname) :
     m_sName(sName),

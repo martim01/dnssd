@@ -1,6 +1,6 @@
 #include "zcposter.h"
 
-using namespace pml;
+using namespace pml::dnssd;
 
 void ZCPoster::_InstanceResolved(std::shared_ptr<dnsInstance> pInstance)
 {
