@@ -3,7 +3,7 @@
 #include <thread>
 #include <mutex>
 #include "dnsdlldefine.h"
-
+#include <memory>
 namespace pml
 {
     namespace dnssd
