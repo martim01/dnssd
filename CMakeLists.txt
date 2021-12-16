@@ -8,14 +8,14 @@ SET(BUILD_LOG ON CACHE BOOL "set to OFF if pml::log built by parent project")
 
 
 #Get log
-find_path(TEMP_DIR7 NAMES "CMakeLists.txt" PATHS ${DIR_LOG})
+find_path(TEMP_DIR7 NAMES "CMakeLists.txt" PATHS ${DIR_LOG} NO_CACHE)
 if((NOT TEMP_DIR7) OR (NOT EXISTS ${TEMP_DIR7}))
 	message(STATUS "log not found - clone from GitHub")
 	execute_process(COMMAND git clone https://github.com/martim01/log/ ${DIR_LOG})
 endif()
 unset(TEMP_DIR7)
 
-find_path(TEMP_DIR8 NAMES "CMakeLists.txt" PATHS ${DIR_LOG})
+find_path(TEMP_DIR8 NAMES "CMakeLists.txt" PATHS ${DIR_LOG} NO_CACHE)
 if((NOT TEMP_DIR8) OR (NOT EXISTS ${TEMP_DIR8}))
 	message(FATAL_ERROR "Failed to clone pml::Log")
 endif()
