@@ -4,7 +4,10 @@ project(pml_dnssd LANGUAGES CXX)
 
 SET(DIR_BASE $ENV{HOME} CACHE STRING "base location for libraries")
 SET(DIR_LOG ${DIR_BASE}/log CACHE STRING "location of pml log")
-SET(BUILD_LOG ON CACHE BOOL "set to OFF if pml::log built by parent project")
+
+if(NOT DEFINED BUILD_LOG)
+	SET(BUILD_LOG ON)
+endif()
 
 
 #Get log
