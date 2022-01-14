@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-project(pml_dnssd LANGUAGES CXX)
+project(pml_dnssd LANGUAGES CXX VERSION 1.1.0)
 
+execute_process(COMMAND ${CMAKE_COMMAND} -DNAMESPACE=dnssd -DMAJOR=${PROJECT_VERSION_MAJOR} -DMINOR=${PROJECT_VERSION_MINOR} -DPATCH=${PROJECT_VERSION_PATCH} -P ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake)
 
 SET(DIR_BASE $ENV{HOME} CACHE STRING "base location for libraries")
 SET(DIR_LOG ${DIR_BASE}/log CACHE STRING "location of pml log")
@@ -51,11 +52,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 
-add_library(pml_dnssd SHARED ${DNS_SOURCES})
+add_library(pml_dnssd SHARED ${DNS_SOURCES} ${CMAKE_BINARY_DIR}/src/dnssd_version.cpp)
 set_target_properties(pml_dnssd PROPERTIES DEBUG_POSTFIX "d")
 
 target_include_directories(pml_dnssd PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(pml_dnssd PUBLIC ${DIR_LOG}/include)
+target_include_directories(pml_dnssd PUBLIC ${CMAKE_BINARY_DIR}/include)
 
 list(APPEND flags "-fPIC" "-Wall" "-fpermissive"  "-std=c++14")
 
