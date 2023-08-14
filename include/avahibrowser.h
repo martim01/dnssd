@@ -11,7 +11,7 @@
 #include <mutex>
 #include <memory>
 #include "dnsdlldefine.h"
-
+#include <string>
 
 
 static void client_callback(AvahiClient * pClient, AvahiClientState state, AVAHI_GCC_UNUSED void * userdata);
