@@ -35,8 +35,8 @@ Browser::~Browser()
 
 }
 
-Publisher::Publisher(const std::string& sName, const std::string& sService, unsigned short nPort, const std::string& sHostname) :
-    m_pPublisher(std::unique_ptr<ServicePublisher>(new ServicePublisher(sName, sService, nPort, sHostname)))
+Publisher::Publisher() :
+    m_pPublisher(std::unique_ptr<ServicePublisher>(new ServicePublisher()))
 {
 }
 
@@ -55,18 +55,23 @@ void Publisher::Stop()
     m_pPublisher->Stop();
 }
 
-void Publisher::Modify()
+
+void Publisher::AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify)
 {
-    m_pPublisher->Modify();
+    m_pPublisher->AddTxt(sName, sKey,sValue, bModify);
 }
 
-void Publisher::AddTxt(const std::string& sKey, const std::string& sValue, bool bModify)
+void Publisher::RemoveTxt(const std::string& sName, const std::string& sKey, bool bModify)
 {
-    m_pPublisher->AddTxt(sKey,sValue, bModify);
+    m_pPublisher->RemoveTxt(sName, sKey, bModify);
 }
 
-void Publisher::RemoveTxt(const std::string& sKey, bool bModify)
+bool Publisher::AddService(const std::string& sName, const std::string& sService, unsigned short nPort,const std::map<std::string, std::string>& mTxt)
 {
-    m_pPublisher->RemoveTxt(sKey, bModify);
+    return m_pPublisher->AddService(sName, sService, nPort, mTxt);
 }
 
+bool Publisher::RemoveService(const std::string& sName)
+{
+    return m_pPublisher->RemoveService(sName);
+}

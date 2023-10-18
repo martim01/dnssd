@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-project(pml_dnssd LANGUAGES CXX VERSION 1.1.0)
+project(pml_dnssd LANGUAGES CXX VERSION 1.2.0)
 
 execute_process(COMMAND ${CMAKE_COMMAND} -DNAMESPACE=dnssd -DMAJOR=${PROJECT_VERSION_MAJOR} -DMINOR=${PROJECT_VERSION_MINOR} -DPATCH=${PROJECT_VERSION_PATCH} -P ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake)
 
@@ -59,7 +59,7 @@ target_include_directories(pml_dnssd PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(pml_dnssd PUBLIC ${DIR_LOG}/include)
 target_include_directories(pml_dnssd PUBLIC ${CMAKE_BINARY_DIR}/include)
 
-list(APPEND flags "-fPIC" "-Wall" "-fpermissive"  "-std=c++14")
+list(APPEND flags "-fPIC" "-Wall" "-fpermissive"  "-std=c++17")
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
    list(APPEND flags "-O3")

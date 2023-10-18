@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include "dnsdlldefine.h"
+#include <map>
 
 namespace pml
 {
@@ -29,16 +30,17 @@ namespace pml
         class DNSSD_EXPORT Publisher
         {
             public:
-                Publisher(const std::string& sName, const std::string& sService, unsigned short nPort, const std::string& sHostname);
-
+                Publisher();
                 ~Publisher();
 
                 bool Start();
                 void Stop();
-                void Modify();
 
-                void AddTxt(const std::string& sKey, const std::string& sValue, bool bModify);
-                void RemoveTxt(const std::string& sKey, bool bModify);
+                bool AddService(const std::string& sName, const std::string& sService, unsigned short nPort,const std::map<std::string, std::string>& mTxt);
+                bool RemoveService(const std::string& sName);
+
+                void AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify);
+                void RemoveTxt(const std::string& sName, const std::string& sKey, bool bModify);
 
             private:
                 std::unique_ptr<ServicePublisher> m_pPublisher;
