@@ -75,3 +75,8 @@ bool Publisher::RemoveService(const std::string& sName)
 {
     return m_pPublisher->RemoveService(sName);
 }
+
+void Publisher::SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt)
+{
+    m_pPublisher->SetTxt(sName, mTxt);
+}

@@ -39,6 +39,7 @@ namespace pml
                 bool AddService(const std::string& sName, const std::string& sService, unsigned short nPort,const std::map<std::string, std::string>& mTxt);
                 bool RemoveService(const std::string& sName);
 
+                void SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt);
                 void AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify);
                 void RemoveTxt(const std::string& sName, const std::string& sKey, bool bModify);
 

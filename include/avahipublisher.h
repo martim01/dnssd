@@ -46,6 +46,7 @@ namespace pml
                 bool RemoveService(const std::string& sName);
 
                 void AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify);
+                void SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt);
                 void RemoveTxt(const std::string& sName, const std::string& sKey,bool bModify);
 
                 void EntryGroupCallback(AvahiEntryGroup* pGroup, AvahiEntryGroupState state);

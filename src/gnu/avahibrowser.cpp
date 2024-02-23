@@ -11,28 +11,28 @@ using namespace pml::dnssd;
 
 void client_callback(AvahiClient * pClient, AvahiClientState state, AVAHI_GCC_UNUSED void * userdata)
 {
-    pmlLog(pml::LOG_TRACE) << "pml::dnssd:\tavahi browser client_callback";
+    pmlLog(pml::LOG_TRACE, "pml::dnssd") << "avahi browser client_callback";
     auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
     pBrowser->ClientCallback(pClient, state);
 }
 
 void type_callback(AvahiServiceTypeBrowser* stb, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char* type, const char* domain, AvahiLookupResultFlags flags, void* userdata)
 {
-    pmlLog(pml::LOG_TRACE) << "pml::dnssd:\tavahi browser type_callback";
+    pmlLog(pml::LOG_TRACE, "pml::dnssd") << "avahi browser type_callback";
     auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
     pBrowser->TypeCallback(interface, protocol, event, type, domain);
 }
 
 void browse_callback(AvahiServiceBrowser *b, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char *name, const char *type, const char *domain, AVAHI_GCC_UNUSED AvahiLookupResultFlags flags, void* userdata)
 {
-    pmlLog(pml::LOG_TRACE) << "pml::dnssd:\tavahi browser browse_callback";
+    pmlLog(pml::LOG_TRACE, "pml::dnssd") << "avahi browser browse_callback";
     auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
     pBrowser->BrowseCallback(b, interface, protocol, event, name, type, domain);
 }
 
 void resolve_callback(AvahiServiceResolver *r, AVAHI_GCC_UNUSED AvahiIfIndex interface, AVAHI_GCC_UNUSED AvahiProtocol protocol, AvahiResolverEvent event,const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt,AvahiLookupResultFlags flags,AVAHI_GCC_UNUSED void* userdata)
 {
-    pmlLog(pml::LOG_TRACE) << "pml::dnssd:\tavahi browser reslove_callback";
+    pmlLog(pml::LOG_TRACE, "pml::dnssd") << "avahi browser reslove_callback";
     auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
     pBrowser->ResolveCallback(r, event, name, type, domain,host_name, address,port,txt);
 
@@ -77,16 +77,16 @@ bool ServiceBrowser::StartBrowser()
 
         int error;
 
-        pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Create Threaded poll object." ;
+        pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Create Threaded poll object." ;
         /* Allocate main loop object */
         if (!(m_pThreadedPoll = avahi_threaded_poll_new()))
         {
-            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: Failed to create Threaded poll object." ;
+            pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: Failed to create Threaded poll object." ;
             return false;
         }
 
         /* Allocate a new client */
-        pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Allocate a new client." ;
+        pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Allocate a new client." ;
         avahi_client_new(avahi_threaded_poll_get(m_pThreadedPoll), AVAHI_CLIENT_NO_FAIL, client_callback, reinterpret_cast<void*>(this), &error);
         avahi_threaded_poll_start(m_pThreadedPoll);
         m_bStarted = true;
@@ -97,7 +97,7 @@ bool ServiceBrowser::StartBrowser()
 
 void ServiceBrowser::Stop()
 {
-    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\tServiceBrowser - stop";
+    pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser - stop";
     if(m_pThreadedPoll)
     {
         avahi_threaded_poll_stop(m_pThreadedPoll);
@@ -134,13 +134,13 @@ void ServiceBrowser::Stop()
     }
     m_nWaitingOn = 0;
 
-    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\tServiceBrowser - stop - done";
+   pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser - stop - done";
 }
 
 
 bool ServiceBrowser::Start(AvahiClient* pClient)
 {
-    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser:Start" ;
+    pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser:Start" ;
     if(!m_bBrowsing)
     {
         //lock_guard<mutex> lg(m_mutex);
@@ -153,7 +153,7 @@ bool ServiceBrowser::Start(AvahiClient* pClient)
 
 void ServiceBrowser::Browse()
 {
-    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser:Browse" ;
+    pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser:Browse" ;
 
     for(auto pairService : m_mServiceBrowse)
     {
@@ -163,11 +163,11 @@ void ServiceBrowser::Browse()
             /* Create the service browser */
             if (!(psb = avahi_service_browser_new(m_pClient, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, (pairService.first).c_str(), m_sDomain.c_str(), (AvahiLookupFlags)0, browse_callback, reinterpret_cast<void*>(this))))
             {
-                pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: Failed to create service browser" ;
+                pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: Failed to create service browser" ;
             }
             else
             {
-                pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Service '" << pairService.first << "' browse" ;
+                pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Service '" << pairService.first << "' browse" ;
                 m_setBrowser.insert(psb);
                 m_nWaitingOn++;
             }
@@ -177,16 +177,16 @@ void ServiceBrowser::Browse()
 
 void ServiceBrowser::ClientCallback(AvahiClient * pClient, AvahiClientState state)
 {
-    pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser:ClientCallback" ;
+    pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser:ClientCallback" ;
     switch (state)
     {
         case AVAHI_CLIENT_FAILURE:
-            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: ClientCallback: failure" ;
+            pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: ClientCallback: failure" ;
             if (avahi_client_errno(pClient) == AVAHI_ERR_DISCONNECTED)
             {
                 int error;
                 /* We have been disconnected, so let reconnect */
-                pmlLog(pml::LOG_WARN) << "pml::dnssd:\t" << "ServiceBrowser:  Disconnected, reconnecting ..." ;
+                pmlLog(pml::LOG_WARN, "pml::dnssd") << "ServiceBrowser:  Disconnected, reconnecting ..." ;
 
                 avahi_client_free(pClient);
                 m_pClient = NULL;
@@ -195,31 +195,31 @@ void ServiceBrowser::ClientCallback(AvahiClient * pClient, AvahiClientState stat
 
                 if (!(avahi_client_new(avahi_threaded_poll_get(m_pThreadedPoll), AVAHI_CLIENT_NO_FAIL, client_callback, reinterpret_cast<void*>(this), &error)))
                 {
-                    pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: Failed to create client object: " << avahi_strerror(avahi_client_errno(m_pClient));// ;
+                    pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: Failed to create client object: " << avahi_strerror(avahi_client_errno(m_pClient));// ;
                     Stop();
 
                 }
             }
             else
             {
-                pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: Server connection failure" ;
+                pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: Server connection failure" ;
                 Stop();
             }
             break;
         case AVAHI_CLIENT_S_REGISTERING:
         case AVAHI_CLIENT_S_RUNNING:
         case AVAHI_CLIENT_S_COLLISION:
-            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Registering/Running ..." ;
+            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Registering/Running ..." ;
             if (!m_bBrowsing)
             {
                 Start(pClient);
             }
             break;
         case AVAHI_CLIENT_CONNECTING:
-            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Waiting for daemon ..." ;
+            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Waiting for daemon ..." ;
             break;
         default:
-            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: ClientCallback: " << state ;
+            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: ClientCallback: " << state ;
     }
 
 }
@@ -231,7 +231,7 @@ void ServiceBrowser::TypeCallback(AvahiIfIndex interface, AvahiProtocol protocol
         case AVAHI_BROWSER_NEW:
             {
                 string sService(type);
-                pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Service '" << type << "' found in domain '" << domain << "'" ;
+                pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Service '" << type << "' found in domain '" << domain << "'" ;
                 auto itServiceBrowse = m_mServiceBrowse.find(sService);
                 if(itServiceBrowse != m_mServiceBrowse.end())
                 {
@@ -242,11 +242,11 @@ void ServiceBrowser::TypeCallback(AvahiIfIndex interface, AvahiProtocol protocol
                         /* Create the service browser */
                         if (!(psb = avahi_service_browser_new(m_pClient, interface, protocol, type, domain, (AvahiLookupFlags)0, browse_callback, reinterpret_cast<void*>(this))))
                         {
-                            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: Failed to create service browser" ;
+                            pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: Failed to create service browser" ;
                         }
                         else
                         {
-                            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Service '" << type << "' browse" ;
+                            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Service '" << type << "' browse" ;
                             m_setBrowser.insert(psb);
                             m_nWaitingOn++;
                         }
@@ -257,21 +257,21 @@ void ServiceBrowser::TypeCallback(AvahiIfIndex interface, AvahiProtocol protocol
             break;
          case AVAHI_BROWSER_REMOVE:
                 /* We're dirty and never remove the browser again */
-            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: Service '" << type << "' removed" ;
+            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: Service '" << type << "' removed" ;
                 break;
         case AVAHI_BROWSER_FAILURE:
-            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: service_type_browser failed" ;
+            pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: service_type_browser failed" ;
             Stop();
             break;
         case AVAHI_BROWSER_CACHE_EXHAUSTED:
-            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: AVAHI_BROWSER_CACHE_EXHAUSTED" ;
+            pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: AVAHI_BROWSER_CACHE_EXHAUSTED" ;
             break;
         case AVAHI_BROWSER_ALL_FOR_NOW:
-            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: AVAHI_BROWSER_ALL_FOR_NOW" ;
+            pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: AVAHI_BROWSER_ALL_FOR_NOW" ;
             CheckStop();
             break;
         default:
-            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: TypeCallback: " << event ;
+            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: TypeCallback: " << event ;
     }
 }
 
@@ -281,7 +281,7 @@ void ServiceBrowser::BrowseCallback(AvahiServiceBrowser* pBrowser, AvahiIfIndex 
     switch (event)
     {
         case AVAHI_BROWSER_FAILURE:
-            pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: Browser Failure: " << avahi_strerror(avahi_client_errno(m_pClient)) ;
+            pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: Browser Failure: " << avahi_strerror(avahi_client_errno(m_pClient)) ;
             Stop();
             break;
         case AVAHI_BROWSER_NEW:
@@ -289,11 +289,11 @@ void ServiceBrowser::BrowseCallback(AvahiServiceBrowser* pBrowser, AvahiIfIndex 
                 string sService(type);
                 string sName(name);
 
-                pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: (Browser) NEW: service '" << name << "' of type '" << type << "' in domain '" << domain << "'" ;
+                pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: (Browser) NEW: service '" << name << "' of type '" << type << "' in domain '" << domain << "'" ;
                 AvahiServiceResolver* pResolver= avahi_service_resolver_new(m_pClient, interface, protocol, name, type, domain, AVAHI_PROTO_INET, (AvahiLookupFlags)0, resolve_callback, reinterpret_cast<void*>(this));
                 if(!pResolver)
                 {
-                    pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: Failed to resolve service " << name << ": " << avahi_strerror(avahi_client_errno(m_pClient)) ;
+                    pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: Failed to resolve service " << name << ": " << avahi_strerror(avahi_client_errno(m_pClient)) ;
                 }
                 else
                 {
@@ -303,12 +303,12 @@ void ServiceBrowser::BrowseCallback(AvahiServiceBrowser* pBrowser, AvahiIfIndex 
             }
             break;
         case AVAHI_BROWSER_REMOVE:
-            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: (Browser) REMOVE: service '" << name << "' of type '" << type << "' in domain '" << domain << "'" ;
+            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: (Browser) REMOVE: service '" << name << "' of type '" << type << "' in domain '" << domain << "'" ;
             RemoveServiceInstance(type, name);
             break;
         case AVAHI_BROWSER_ALL_FOR_NOW:
             {
-                pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: (Browser) '" << type << "' in domain '" << domain << "' ALL_FOR_NOW" ;
+                pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: (Browser) '" << type << "' in domain '" << domain << "' ALL_FOR_NOW" ;
                 auto pPoster = GetPoster(type);
                 if(pPoster)
                 {
@@ -329,11 +329,11 @@ void ServiceBrowser::BrowseCallback(AvahiServiceBrowser* pBrowser, AvahiIfIndex 
             break;
         case AVAHI_BROWSER_CACHE_EXHAUSTED:
             {
-                pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: (Browser) ' CACHE_EXHAUSTED " ;
+                pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: (Browser) ' CACHE_EXHAUSTED " ;
             }
             break;
         default:
-            pmlLog(pml::LOG_DEBUG) << "pml::dnssd:\t" << "ServiceBrowser: BrowseCallback: " << event ;
+            pmlLog(pml::LOG_DEBUG, "pml::dnssd") << "ServiceBrowser: BrowseCallback: " << event ;
     }
 }
 
@@ -349,7 +349,7 @@ void ServiceBrowser::ResolveCallback(AvahiServiceResolver* pResolver, AvahiResol
         switch (event)
         {
             case AVAHI_RESOLVER_FAILURE:
-                pmlLog(pml::LOG_ERROR) << "pml::dnssd:\t" << "ServiceBrowser: (Resolver) Failed to resolve service '" << name << "' of type '" << type << "' in domain '" << domain << "': " << avahi_strerror(avahi_client_errno(m_pClient)) ;
+                pmlLog(pml::LOG_ERROR, "pml::dnssd") << "ServiceBrowser: (Resolver) Failed to resolve service '" << name << "' of type '" << type << "' in domain '" << domain << "': " << avahi_strerror(avahi_client_errno(m_pClient)) ;
                 m_mResolvers.erase(string(name)+"__"+string(type));
                 avahi_service_resolver_free(pResolver);
                 break;
@@ -395,11 +395,11 @@ void ServiceBrowser::ResolveCallback(AvahiServiceResolver* pResolver, AvahiResol
                     m_mutex.unlock();
                     if(itInstance->second->nUpdate == 0)
                     {
-                        pmlLog(pml::LOG_INFO) << "pml::dnssd:\t" << "ServiceBrowser: Instance '" << itInstance->second->sName << "' resolved at '" << itInstance->second->sHostIP << "'" ;
+                        pmlLog(pml::LOG_INFO, "pml::dnssd") << "ServiceBrowser: Instance '" << itInstance->second->sName << "' resolved at '" << itInstance->second->sHostIP << "'" ;
                     }
                     else
                     {
-                        pmlLog(pml::LOG_INFO) << "pml::dnssd:\t" << "ServiceBrowser: Instance '" << itInstance->second->sName << "' updated at '" << itInstance->second->sHostIP << "'" ;
+                        pmlLog(pml::LOG_INFO, "pml::dnssd") << "ServiceBrowser: Instance '" << itInstance->second->sName << "' updated at '" << itInstance->second->sHostIP << "'" ;
                     }
                 }
 
