@@ -5,28 +5,12 @@ message(STATUS "----pml/dnssd ----")
 
 execute_process(COMMAND ${CMAKE_COMMAND} -DNAMESPACE=dnssd -DMAJOR=${PROJECT_VERSION_MAJOR} -DMINOR=${PROJECT_VERSION_MINOR} -DPATCH=${PROJECT_VERSION_PATCH} -P ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake)
 
-SET(DIR_BASE $ENV{HOME} CACHE STRING "base location for libraries")
-SET(DIR_LOG ${DIR_BASE}/log CACHE STRING "location of pml log")
+SET(DIR_BASE ${CMAKE_SOURCE_DIR} CACHE STRING "base location for libraries")
+SET(DIR_LOG ${DIR_BASE}/external/log CACHE STRING "location of pml log")
 
-if(NOT DEFINED BUILD_LOG)
-	SET(BUILD_LOG ON)
-	#Get log
-	find_path(TEMP_DIR7 NAMES "CMakeLists.txt" PATHS ${DIR_LOG} NO_CACHE)
-	if((NOT TEMP_DIR7) OR (NOT EXISTS ${TEMP_DIR7}))
-		message(STATUS "log not found - clone from GitHub")
-		execute_process(COMMAND git clone https://github.com/martim01/log/ ${DIR_LOG})
-	endif()
-	unset(TEMP_DIR7)
+FetchContent_Declare(log GIT_REPOSITORY "https://github.com/martim01/log.git"  SOURCE_DIR ${DIR_LOG})
 
-	find_path(TEMP_DIR8 NAMES "CMakeLists.txt" PATHS ${DIR_LOG} NO_CACHE)
-	if((NOT TEMP_DIR8) OR (NOT EXISTS ${TEMP_DIR8}))
-		message(FATAL_ERROR "Failed to clone pml::Log")
-	endif()
-	unset(TEMP_DIR8)
-	add_subdirectory(${DIR_LOG} ${CMAKE_SOURCE_DIR}/build/log)
-else()
-	message(STATUS "dnssd - pml::log being build elsewhere")
-endif()
+FetchContent_MakeAvailable(log)
 
 list(APPEND DNS_SOURCES "src/dnssd.cpp"  "src/zcposter.cpp")
 
