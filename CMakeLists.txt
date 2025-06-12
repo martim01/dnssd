@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-project(pml_dnssd LANGUAGES CXX VERSION 1.2.0)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+project(pml_dnssd LANGUAGES CXX VERSION 1.2.1)
+include(FetchContent)
 
 message(STATUS "----pml/dnssd ----")
 
