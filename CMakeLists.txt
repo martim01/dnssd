@@ -11,7 +11,10 @@ SET(DIR_LOG ${DIR_BASE}/external/log CACHE STRING "location of pml log")
 
 FetchContent_Declare(log GIT_REPOSITORY "https://github.com/martim01/log.git"  SOURCE_DIR ${DIR_LOG})
 
-FetchContent_MakeAvailable(log)
+FetchContent_GetProperties(log)
+if(NOT log_POPULATED)
+	FetchContent_MakeAvailable(asio)
+endif()
 
 list(APPEND DNS_SOURCES "src/dnssd.cpp"  "src/zcposter.cpp")
 
