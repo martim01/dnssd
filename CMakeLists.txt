@@ -57,7 +57,6 @@ endif()
 
 target_compile_options(pml_dnssd PRIVATE ${flags})
 link_directories(${CMAKE_SOURCE_DIR}/lib)
-target_link_libraries(pml_dnssd optimized pml_log debug pml_logd)
 target_link_libraries(pml_dnssd avahi-client)
 
 #linux specific
