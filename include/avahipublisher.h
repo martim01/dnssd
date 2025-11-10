@@ -14,7 +14,7 @@
 #include <avahi-common/timeval.h>
 
 #include "dnsdlldefine.h"
-
+#include "servicepublisher.h"
 
 static void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, AVAHI_GCC_UNUSED void *userdata);
 static void client_callback(AvahiClient *c, AvahiClientState state, AVAHI_GCC_UNUSED void * userdata);
@@ -32,23 +32,23 @@ namespace pml::dnssd
         std::map<std::string, std::string> mTxt;
     };
     
-    class ServicePublisher
+    class AvahiPublisher : public ServicePublisher
     {
         public:
-            ServicePublisher();
-            ~ServicePublisher();
+            AvahiPublisher();
+            ~AvahiPublisher();
 
-            bool Start();
-            void Stop();
+            bool Start() final;
+            void Stop() final;
             
 
-            bool AddService(const std::string& sName, const std::string& sService, unsigned short nPort, const std::map<std::string, std::string>& mTxt);
+            bool AddService(const std::string& sName, const std::string& sService, unsigned short nPort, const std::map<std::string, std::string>& mTxt) final;
 
-            bool RemoveService(const std::string& sName);
+            bool RemoveService(const std::string& sName) final;
 
-            void AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify);
-            void SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt);
-            void RemoveTxt(const std::string& sName, const std::string& sKey,bool bModify);
+            void AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify) final;
+            void SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt) final;
+            void RemoveTxt(const std::string& sName, const std::string& sKey,bool bModify) final;
 
             void EntryGroupCallback(AvahiEntryGroup* pGroup, AvahiEntryGroupState state);
             void ClientCallback(AvahiClient* pClient, AvahiClientState state);

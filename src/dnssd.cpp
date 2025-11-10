@@ -36,7 +36,11 @@ namespace pml::dnssd
     }
 
     Publisher::Publisher() :
-        m_pPublisher(std::unique_ptr<ServicePublisher>(new ServicePublisher()))
+        #ifdef _WIN32
+            m_pPublisher(std::unique_ptr<ServicePublisher>(new BonjourPublisher()))
+        #else
+            m_pPublisher(std::unique_ptr<ServicePublisher>(new AvahiPublisher()))
+        #endif // _WIN32
     {
     }
 

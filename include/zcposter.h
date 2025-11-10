@@ -15,8 +15,8 @@ namespace pml::dnssd
     class DNSSD_EXPORT ZCPoster
     {
         private:
-            friend class AvahiBrowser;
-            friend class BonjourBrowser;
+
+            friend class ServiceBrowser;
             
             void _RegistrationNodeError();
             void _InstanceResolved(std::shared_ptr<dnsInstance> pInstance);
@@ -60,6 +60,6 @@ namespace pml::dnssd
 
         private:
             std::mutex m_mutex;
-    }
+    };
 }
 #endif

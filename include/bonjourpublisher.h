@@ -2,34 +2,54 @@
 #define PML_DNSSD_BONJOURPUBLISHER_H
 
 #ifdef _WIN32
+#include <atomic>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "dns_sd.h"
 #include "dnsdlldefine.h"
+#include "servicepublisher.h"
 
 namespace pml::dnssd
 {
-    class ServicePublisher
+    class BonjourPublisher : public ServicePublisher
     {
         public:
-            ServicePublisher(std::string sName, std::string sService, unsigned short nPort, std::string sHostname);
-            ~ServicePublisher();
+            BonjourPublisher();
+            ~BonjourPublisher();
 
-            bool Start();
-            void Stop();
-            void Modify();
+            bool Start() final;
+            void Stop() final;
+            
 
-            void AddTxt(std::string sKey, std::string sValue, bool bModify);
-            void RemoveTxt(std::string sKey, bool bModify);
+            bool AddService(const std::string& sName, const std::string& sService, unsigned short nPort, const std::map<std::string, std::string>& mTxt) final;
+
+            bool RemoveService(const std::string& sName) final;
+
+            void AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify) final;
+            void SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt) final;
+            void RemoveTxt(const std::string& sName, const std::string& sKey,bool bModify) final;
 
 
         private:
-            static void RunSelect(ServicePublisher* pPublisher);
-            std::vector<unsigned char> MakeTxtRecords();
+            struct bonjourInfo
+            {
+                DNSServiceRef sdRef{0};
+                std::string sName;
+                std::string sService;
+                unsigned short nPort = 0;
+                std::map<std::string, std::string> mTxt;
+            };
+
+            void Modify(const bonjourInfo& info);
+
+            void RunSelect();
+            std::vector<unsigned char> MakeTxtRecords(const std::map<std::string, std::string>& mTxt);
 
             std::string m_sName;
             std::string m_sService;
@@ -39,9 +59,13 @@ namespace pml::dnssd
 
             DNSServiceRef m_sdRef;
             std::map<DNSServiceRef,int> m_mClientToFd;
-            std::map<std::string, std::string> m_mTxt;
+            
             //"_nmos-node._tcp"
             std::mutex m_mutex;
+            std::atomic_bool m_bRun{true};
+            std::unique_ptr<std::thread> m_pThread = nullptr;
+
+            std::map<std::string, bonjourInfo> m_mServices;
     };
 }
 #endif

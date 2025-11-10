@@ -18,10 +18,10 @@
 #include "dns_sd.h"
 #include "mdns.h"
 
-static void DNSSD_API IterateServiceTypes( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype,const char *replyDomain, void *context );
-static void DNSSD_API IterateServiceInstances( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype,const char *replyDomain, void *context );
-static void DNSSD_API ResolveInstance(  DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *hosttarget, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context );
-static void DNSSD_API GetAddress( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *hostname, const struct sockaddr *address,uint32_t ttl, void *context );
+static void DNSSD_API iterate_service_types( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype,const char *replyDomain, void *context );
+static void DNSSD_API iterate_service_instances( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype,const char *replyDomain, void *context );
+static void DNSSD_API resolve_instance(  DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *hosttarget, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context );
+static void DNSSD_API get_address( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *hostname, const struct sockaddr *address,uint32_t ttl, void *context );
 
 
 namespace pml::dnssd
@@ -35,7 +35,7 @@ namespace pml::dnssd
 
     public:
 
-        ServiceBrowser();
+        ServiceBrowser(const std::string& sDomain);
         ~ServiceBrowser(){}
         void AddService(const std::string& sService, std::shared_ptr<ZCPoster> pPoster);
         void RemoveService(const std::string& sService);
@@ -48,7 +48,7 @@ namespace pml::dnssd
         void DNSSD_API Resolve(  DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *hosttarget, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context );
         void DNSSD_API Address( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *hostname, const struct sockaddr *address,uint32_t ttl, void *context );
 
-        static void RunSelect(ServiceBrowser* pBrowser);
+        void RunSelect();
 
         const std::map<std::string, std::shared_ptr<dnsService> >& GetServices() const { return m_mServices; }
         const std::map<DNSServiceRef, int>& GetClientToFdMap() const { return m_mClientToFd; }

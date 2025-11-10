@@ -1,208 +1,240 @@
-#ifdef __WIN32__
+#ifdef _WIN32
 #include "bonjourpublisher.h"
 #include <sstream>
 #include <thread>
 
 #include "log.h"
-using namespace std;
-using namespace pml::dnssd;
 
-ServicePublisher::ServicePublisher(string sName, string sService, unsigned short nPort, string sHostname) :
-    m_sName(sName),
-    m_sService(sService),
-    m_nPort(nPort),
-    m_sHostname(sHostname)
+namespace pml::dnssd
 {
 
-}
+    BonjourPublisher::BonjourPublisher()=default;
 
-ServicePublisher::~ServicePublisher()
-{
-
-}
-
-
-//extern void HandleEvents(DNSServiceRef);
-
-static void  RegisterCallBack(DNSServiceRef service,  DNSServiceFlags flags,  DNSServiceErrorType errorCode,  const char * name,  const char * type,  const char * domain, void * context)
-{
-    if (errorCode != kDNSServiceErr_NoError)
+    BonjourPublisher::~BonjourPublisher()
     {
-        Log::Get(Log::LOG_ERROR) << "RegisterCallBack returned "<< errorCode << endl;
+        Stop();
     }
-    else
-    {
-        Log::Get(Log::LOG_INFO) << name << "." << type << "." << domain << "REGISTER" << endl;
+
+
+    bool BonjourPublisher::AddService(const std::string& sName, const std::string& sService, unsigned short nPort, const std::map<std::string, std::string>& mTxt)
+    {   
+        std::scoped_lock lg(m_mutex);
+
+        pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "Add Service " << sService;
+
+        bonjourInfo info;
+        info.sName = sName;
+        info.nPort = nPort;
+        info.mTxt = mTxt;
+        info.sService = sService;
+
+
+        DNSServiceErrorType error;
+        DNSServiceRef serviceRef;
+
+        const std::vector<unsigned char> vRecords(MakeTxtRecords(mTxt));
+
+        error = DNSServiceRegister(&info.sdRef,
+                                    0,                  // no flags
+                                    0,                  // all network interfaces
+                                    sName.c_str(),  // name
+                                    sService.c_str(),       // service type
+                                    "",                 // register in default domain(s)
+                                    nullptr,               // use default host name
+                                    htons(nPort),        // port number
+                                    vRecords.size(),                  // length of TXT record
+                                    !vRecords.empty()? &vRecords[0] : nullptr,               // no TXT record
+                                    nullptr, // call back function
+                                    nullptr);              // no context
+
+        if (error == kDNSServiceErr_NoError)
+        {
+            pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "Service " << sService << " added";
+            m_mClientToFd[info.sdRef] = DNSServiceRefSockFD(info.sdRef);
+
+            m_mServices.try_emplace(sName, info);
+        
+
+            return true;
+        }
+        else
+        {
+            pml::log::log(pml::log::Level::kError, "pml::dnssd::BonjourPublisher") << "Failed to add service " << sService << " : " << error;
+            return false;
+        }
     }
-}
 
-
-bool ServicePublisher::Start()
-{
-
-    m_sdRef = 0;
-    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BojourPubliser: Start" << endl;
-
-
-    DNSServiceErrorType error;
-    DNSServiceRef serviceRef;
-
-    const std::vector<unsigned char> vRecords(MakeTxtRecords());
-
-    error = DNSServiceRegister(&m_sdRef,
-                                0,                  // no flags
-                                0,                  // all network interfaces
-                                m_sName.c_str(),  // name
-                                m_sService.c_str(),       // service type
-                                "",                 // register in default domain(s)
-                                NULL,               // use default host name
-                                htons(m_nPort),        // port number
-                                vRecords.size(),                  // length of TXT record
-                                !vRecords.empty()? &vRecords[0] : NULL,               // no TXT record
-                                NULL, // call back function
-                                NULL);              // no context
-
-    if (error == kDNSServiceErr_NoError)
+    bool BonjourPublisher::RemoveService(const std::string& sName)
     {
-        pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BojourPubliser: Started" << endl;
-        m_mClientToFd[m_sdRef] = DNSServiceRefSockFD(m_sdRef);;
+        if(auto itService = m_mServices.find(sName); itService != m_mServices.end())
+        {
+            DNSServiceRefDeallocate(itService->second.sdRef);
+            m_mServices.erase(itService);
+            return true;
+        }
+        return false;
+    }
 
-        thread th(RunSelect, this);
-        th.detach();
 
+    bool BonjourPublisher::Start()
+    {
+
+        pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BojourPubliser: Start";
+        m_pThread = std::make_unique<std::thread>([this](){RunSelect();});
         return true;
     }
-    Log::Get(Log::LOG_ERROR) << "BojourPubliser: Failed to start: " << error << endl;
-    return false;
 
-
-}
-
-void ServicePublisher::Stop()
-{
-    lock_guard<mutex> lock(m_mutex);
-    if(m_sdRef)
+    void BonjourPublisher::Stop()
     {
-        DNSServiceRefDeallocate(m_sdRef);
-    }
-}
-
-void ServicePublisher::Modify()
-{
-    lock_guard<mutex> lock(m_mutex);
-    if(m_sdRef)
-    {
-        // try and find a record that matches
-        const std::vector<unsigned char> txt_records = MakeTxtRecords();
-
-        DNSServiceErrorType errorCode = DNSServiceUpdateRecord(m_sdRef, NULL, 0, (std::uint16_t)txt_records.size(), &txt_records[0], 0);
-
-        if (errorCode != kDNSServiceErr_NoError)
+        std::scoped_lock lg(m_mutex);
+        m_bRun = false;
+        if(m_pThread)
         {
+            m_pThread->join();
+            m_pThread = nullptr;
+        }
+        
+    }
+
+    void BonjourPublisher::Modify(const bonjourInfo& info)
+    {
+        std::scoped_lock lg(m_mutex);
+        if(info.sdRef)
+        {
+            // try and find a record that matches
+            const std::vector<unsigned char> txt_records = MakeTxtRecords(info.mTxt);
+
+            DNSServiceErrorType errorCode = DNSServiceUpdateRecord(info.sdRef, NULL, 0, (std::uint16_t)txt_records.size(), &txt_records[0], 0);
+
+            if (errorCode != kDNSServiceErr_NoError)
+            {
+                pml::log::log(pml::log::Level::kError, "pml::dnssd::BonjourPublisher") << "Modify failed with error "<< errorCode;
+            }
+            else
+            {
+                pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourPublisher") << "Modify succeeded";
+            }
+        }
+    }
+
+    void BonjourPublisher::AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify)
+    {
+        if(auto itService= m_mServices.find(sName); itService != m_mServices.end())
+        {
+            itService->second.mTxt[sKey] = sValue;
+            if(bModify)
+            {
+                Modify(itService->second);
+            }
+        }
+    }
+
+    void BonjourPublisher::RemoveTxt(const std::string& sName, const std::string& sKey,bool bModify)
+    {
+        if(auto itService= m_mServices.find(sName); itService != m_mServices.end())
+        {
+            itService->second.mTxt.erase(sKey);
+            if(bModify)
+            {
+                Modify(itService->second);
+            }
+        }
+    }
+
+    void BonjourPublisher::SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt)
+    {
+        if(auto itService= m_mServices.find(sName); itService != m_mServices.end())
+        {
+            itService->second.mTxt = mTxt;
+
+            Modify(itService->second);
+        }
+    }
+
+    std::vector<unsigned char> BonjourPublisher::MakeTxtRecords(const std::map<std::string, std::string>& mTxt)
+    {
+        std::vector<unsigned char> vText;
+
+        for(const auto& [sKey, sValue] : mTxt)
+        {
+            std::stringstream ss;
+            ss << sKey << "=" << sValue;
+            vText.push_back(ss.str().size());
+            for(size_t i = 0; i < ss.str().size(); i++)
+            {
+                vText.push_back(ss.str()[i]);
+            }
+
+        }
+
+        return vText;
+    }
+
+
+    void BonjourPublisher::RunSelect()
+    {
+        while(m_bRun)
+        {
+            if (m_mClientToFd.size() == 0 )
+            {
+                m_bRun = false;
+            }
+            else
+            {
+                fd_set readfds;
+                FD_ZERO(&readfds);
+                int nfds = 0;
+                for(const auto& [sdRef, fd] : m_mClientToFd)
+                {
+                    FD_SET(fd, &readfds);
+                    nfds = std::max(fd, nfds);
+                }
+
+
+                pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourPublisher") << "Start select: fd =" << m_mClientToFd.size() << " nfds =" << nfds;
+                struct timeval tv = { 0, 1000 };
+
+                int result = select(nfds, &readfds, (fd_set*)nullptr, (fd_set*)nullptr, &tv);
+                int count = 0;
+                if ( result > 0 )
+                {
+                    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourPublisher") << "Select done";
+                    std::scoped_lock lg(m_mutex);
+
+                    //
+                    // While iterating through the loop, the callback functions might delete
+                    // the client pointed to by the current iterator, so I have to increment
+                    // it BEFORE calling DNSServiceProcessResult
+                    //
+                    for ( auto itClient = m_mClientToFd.cbegin() ; itClient != m_mClientToFd.cend() ; )
+                    {
+                        auto jj = ++itClient;
+                        if (FD_ISSET(jj->second, &readfds) )
+                        {
+                            if(auto err = DNSServiceProcessResult(jj->first); err != kDNSServiceErr_NoError)
+                            {
+                                pml::log::log(pml::log::Level::kError, "pml::dnssd::BonjourPublisher") << "BonjourPublisher: DNSServiceProcessResult returned error " << err ;
+                            }
+                            if ( ++count > 10 )
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourPublisher") << "Result = " << result;
+                    break;
+                }
+            }
+        }
+
+        for(auto& [sName, info] : m_mServices)
+        {
+            DNSServiceRefDeallocate(info.sdRef);
         }
     }
 }
 
-void ServicePublisher::AddTxt(string sKey, string sValue, bool bModify)
-{
-    m_mTxt[sKey] = sValue;
-    if(bModify)
-    {
-        Modify();
-    }
-}
-
-void ServicePublisher::RemoveTxt(string sKey, bool bModify)
-{
-    m_mTxt.erase(sKey);
-    if(bModify)
-    {
-        Modify();
-    }
-}
-
-std::vector<unsigned char> ServicePublisher::MakeTxtRecords()
-{
-    vector<unsigned char> vText;
-
-
-
-    for(map<string, string>::iterator itTxt = m_mTxt.begin(); itTxt != m_mTxt.end(); ++itTxt)
-    {
-        std::stringstream ss;
-        ss << itTxt->first << "=" << itTxt->second;
-        vText.push_back(ss.str().size());
-        for(size_t i = 0; i < ss.str().size(); i++)
-        {
-            vText.push_back(ss.str()[i]);
-        }
-
-    }
-    return vText;
-}
-
-
-void ServicePublisher::RunSelect(ServicePublisher* pPublisher)
-{
-    int count = 0;
-	for ( ; ; )
-	{
-        if ( pPublisher->m_mClientToFd.size() == 0 )
-		{
-            //if(pPublisher->m_pPoster)
-            //{
-            //    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourBrowser: Finished" << endl;
-            //    pBrowser->m_pPoster->_Finished();
-            //}
-            break;
-        }
-		fd_set readfds;
-		FD_ZERO(&readfds);
-		int nfds = 0;
-		for ( auto itClient = pPublisher->m_mClientToFd.cbegin() ; itClient != pPublisher->m_mClientToFd.cend() ; itClient++ )
-		{
-			FD_SET(itClient->second, &readfds);
-			nfds = max((int)itClient->second, nfds);
-		}
-
-
-		pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourPublisher: Start select: fd =" << pPublisher->m_mClientToFd.size() << " nfds =" << nfds << endl;
-		struct timeval tv = { 0, 1000 };
-
-		//mDNSPosixGetFDSet(m, &nfds, &readfds, &tv);
-		int result = select(nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
-
-		if ( result > 0 )
-		{
-		    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourPublisher: Select done"  << endl;
-		    lock_guard<mutex> lock(pPublisher->m_mutex);
-            //
-            // While iterating through the loop, the callback functions might delete
-            // the client pointed to by the current iterator, so I have to increment
-            // it BEFORE calling DNSServiceProcessResult
-            //
-			for ( auto itClient =pPublisher-> m_mClientToFd.cbegin() ; itClient != pPublisher->m_mClientToFd.cend() ; )
-			{
-                auto jj = itClient++;
-				if (FD_ISSET(jj->second, &readfds) )
-				{
-					DNSServiceErrorType err = DNSServiceProcessResult(jj->first);
-                    if ( ++count > 10 )
-					{
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-		    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "Result = " << result << endl;
-			break;
-		}
-        if ( count > 10 )
-        {
-			break;
-		}
-	}
-}
 #endif

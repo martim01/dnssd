@@ -12,43 +12,41 @@
 #include "log.h"
 
 
-
-
-void DNSSD_API IterateServiceTypes( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype, const char *replyDomain, void *context )
+void DNSSD_API iterate_service_types( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype, const char *replyDomain, void *context )
 {
     pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "IterateServiceTypes";
-	ServiceBrowser* pBrowser = (ServiceBrowser *) context;
+	auto pBrowser = (pml::dnssd::ServiceBrowser *) context;
     pBrowser->IterateTypes(sdRef, flags, interfaceIndex, errorCode, serviceName, regtype, replyDomain, context);
 }
 
 
-void DNSSD_API IterateServiceInstances( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype, const char *replyDomain, void *context )
+void DNSSD_API iterate_service_instances( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype, const char *replyDomain, void *context )
 {
     pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "IterateServiceInstances";
 
-	ServiceBrowser* pBrowser = (ServiceBrowser *) context;
+	auto pBrowser = (pml::dnssd::ServiceBrowser *) context;
 	pBrowser->IterateInstances(sdRef, flags, interfaceIndex, errorCode, serviceName, regtype, replyDomain, context );
 }
 
-void DNSSD_API ResolveInstance( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *hosttarget, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context )
+void DNSSD_API resolve_instance( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *hosttarget, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context )
 {
     pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "ResolveInstance";
-	ServiceBrowser* pBrowser = (ServiceBrowser *) context;
+	auto pBrowser = (pml::dnssd::ServiceBrowser *) context;
 	pBrowser->Resolve(sdRef, flags, interfaceIndex, errorCode, fullname, hosttarget, port, txtLen, txtRecord, context );
 }
 
 
-void DNSSD_API GetAddress( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *hostname, const struct sockaddr *address, uint32_t ttl, void *context )
+void DNSSD_API get_address( DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *hostname, const struct sockaddr *address, uint32_t ttl, void *context )
 {
     pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "GetAddress";
-	ServiceBrowser* pBrowser = (ServiceBrowser *) context;
+	auto pBrowser = (pml::dnssd::ServiceBrowser *) context;
 	pBrowser->Address(sdRef, flags, interfaceIndex, errorCode, hostname, address, ttl, context );
 }
 
 
 namespace pml::dnssd
 {
-    ServiceBrowser::ServiceBrowser()
+    ServiceBrowser::ServiceBrowser(const std::string& sDomain)
     {
 
     }
@@ -66,22 +64,19 @@ namespace pml::dnssd
         m_mServiceBrowse.erase(sService);
     }
 
-
-
     bool ServiceBrowser::StartBrowser()
     {
 
         pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "Start";
 
-
         DNSServiceRef client = NULL;
-        DNSServiceErrorType err = DNSServiceBrowse(&client, 0, 0, "_services._dns-sd._udp", "", IterateServiceTypes, this );
+        DNSServiceErrorType err = DNSServiceBrowse(&client, 0, 0, "_services._dns-sd._udp", "", iterate_service_types, this );
         if ( err == 0 )
         {
             m_mClientToFd[client] = DNSServiceRefSockFD(client);
             pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "StartThread";
 
-            m_pThread = std::make_unique<std::thread>(RunSelect, this);
+            m_pThread = std::make_unique<std::thread>([this](){ RunSelect(); });
 
 
             return true;
@@ -90,32 +85,34 @@ namespace pml::dnssd
         return false;
     }
 
-    void ServiceBrowser::RunSelect(ServiceBrowser* pBrowser)
+    void ServiceBrowser::RunSelect()
     {
         int count = 0;
         while(m_bRun)
         {
-            if ( pBrowser->m_mClientToFd.size() == 0 )
+            if ( m_mClientToFd.size() == 0 )
             {
                 pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourBrowser: Finished";
 
-                for(auto itPoster = pBrowser->GetPosterBegin(); itPoster != pBrowser->GetPosterEnd(); ++itPoster)
+                for(auto [sName, pPoster] : m_mServiceBrowse)
                 {
-                    itPoster->second->_Finished();
+                    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "Notifying poster of finish: " << sName;
+                    pPoster->_Finished();
                 }
-                break;
+                m_bRun = false;
             }
+
             fd_set readfds;
             FD_ZERO(&readfds);
             int nfds = 0;
-            for(const auto& [fd, service] : pBrowser->m_mClientToFd)
+            for(const auto& [fd, service] : m_mClientToFd)
             {
                 FD_SET(service, &readfds);
-                nfds = max((int)service, nfds);
+                nfds = std::max((int)service, nfds);
             }
 
 
-            pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourBrowser: Start select: fd =" << pBrowser->m_mClientToFd.size() << " nfds =" << nfds;
+            pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourBrowser: Start select: fd =" << m_mClientToFd.size() << " nfds =" << nfds;
             struct timeval tv = { 0, 1000 };
 
             //mDNSPosixGetFDSet(m, &nfds, &readfds, &tv);
@@ -129,12 +126,15 @@ namespace pml::dnssd
                 // the client pointed to by the current iterator, so I have to increment
                 // it BEFORE calling DNSServiceProcessResult
                 //
-                for ( auto itClient =pBrowser-> m_mClientToFd.cbegin() ; itClient != pBrowser->m_mClientToFd.cend() ; )
+                for ( auto itClient = m_mClientToFd.cbegin() ; itClient != m_mClientToFd.cend() ; )
                 {
-                    auto jj = itClient++;
+                    auto jj = ++itClient;
                     if (FD_ISSET(jj->second, &readfds) )
                     {
-                        DNSServiceErrorType err = DNSServiceProcessResult(jj->first);
+                        if(auto err = DNSServiceProcessResult(jj->first); err != kDNSServiceErr_NoError)
+                        {
+                            pml::log::log(pml::log::Level::kError, "pml::dnssd::BonjourBrowser") << "BonjourBrowser: DNSServiceProcessResult returned error " << err ;
+                        }
                         if ( ++count > 10 )
                         {
                             break;
@@ -160,18 +160,18 @@ namespace pml::dnssd
         //
         if ( flags & kDNSServiceFlagsAdd && !errorCode )
         {
-            string r( regtype );
+            std::string r( regtype );
             size_t n = r.find_last_of('.');
-            if ( n != string::npos )
+            if ( n != std::string::npos )
             {
                 r = r.substr(0,n);
             }
             n = r.find_last_of('.');
-            if ( n != string::npos )
+            if ( n != std::string::npos )
             {
                 r = r.substr(0,n);
             }
-            string service_type = serviceName;
+            std::string service_type = serviceName;
             service_type += '.';
             service_type += r.c_str();
             auto itServicePost = m_mServiceBrowse.find(service_type);
@@ -182,10 +182,10 @@ namespace pml::dnssd
                 if ( itService == m_setServiceTypes.end() )
                 {
                     m_setServiceTypes.insert( service_type );
-                    shared_ptr<dnsService> pService = make_shared<dnsService>(service_type);
+                    std::shared_ptr<dnsService> pService = std::make_shared<dnsService>(service_type);
 
                     DNSServiceRef client = NULL;
-                    DNSServiceErrorType err = DNSServiceBrowse( &client,  0,  0,  service_type.c_str(),  "",  IterateServiceInstances,  context );
+                    DNSServiceErrorType err = DNSServiceBrowse( &client,  0,  0,  service_type.c_str(),  "",  iterate_service_instances,  context );
 
                     if ( err == 0 )
                     {
@@ -220,11 +220,11 @@ namespace pml::dnssd
             {
                 auto itService = m_mServices.find(itServToString->second);
 
-                shared_ptr<dnsInstance> pInstance = make_shared<dnsInstance>(serviceName);
+                std::shared_ptr<dnsInstance> pInstance = std::make_shared<dnsInstance>(serviceName);
                 pInstance->sService = itServToString->second;
 
                 DNSServiceRef client = NULL;
-                DNSServiceErrorType err = DNSServiceResolve ( &client, 0, interfaceIndex, serviceName, regtype, replyDomain, ResolveInstance, context );
+                DNSServiceErrorType err = DNSServiceResolve ( &client, 0, interfaceIndex, serviceName, regtype, replyDomain, resolve_instance, context );
 
                 pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourBrowser: Resolving instance of " << serviceName << " " << regtype;
 
@@ -264,11 +264,11 @@ namespace pml::dnssd
                 MIB_IFROW IfRow;
                 IfRow.dwIndex = interfaceIndex;
                 DWORD result  = GetIfEntry ( &IfRow );
-                string sAdapter = "Unknown";
+                std::string sAdapter = "Unknown";
                 if ( result == 0 )
                 {
                     sAdapter = (char*)IfRow.bDescr;
-                    DNSServiceErrorType err = DNSServiceGetAddrInfo( &client, kDNSServiceFlagsTimeout, interfaceIndex, kDNSServiceProtocol_IPv4, hosttarget, GetAddress, context );
+                    DNSServiceErrorType err = DNSServiceGetAddrInfo( &client, kDNSServiceFlagsTimeout, interfaceIndex, kDNSServiceProtocol_IPv4, hosttarget, get_address, context );
 
                     if ( err == 0 )
                     {
@@ -278,7 +278,7 @@ namespace pml::dnssd
                     }
                     else
                     {
-                        pml::log::log(pml::log::Level::kError, "pml::dnssd::BonjourBrowser" << "Error looking up address info for "<<  itInstance->second->sHostName;
+                        pml::log::log(pml::log::Level::kError, "pml::dnssd::BonjourBrowser") << "Error looking up address info for "<<  itInstance->second->sHostName;
                     }
                 }
                 uint8_t lolo = (port >> 0) & 0xFF;
@@ -301,14 +301,14 @@ namespace pml::dnssd
                         {
                             break;
                         }
-                        stringstream ssText;
+                        std::stringstream ssText;
                         for(int i = 0; i < length; i++)
                         {
                             ssText << txtRecord[pos];
                             ++pos;
                         }
                         size_t nFind = ssText.str().find("=");
-                        if(nFind != string::npos)
+                        if(nFind != std::string::npos)
                         {
                             itInstance->second->mTxt.insert(make_pair(ssText.str().substr(0,nFind), ssText.str().substr(nFind+1)));
                         }

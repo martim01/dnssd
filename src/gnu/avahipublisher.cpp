@@ -6,20 +6,20 @@
 
 void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, AVAHI_GCC_UNUSED void *userdata)
 {
-    ServicePublisher* pPublisher = reinterpret_cast<ServicePublisher*>(userdata);
+    AvahiPublisher* pPublisher = reinterpret_cast<AvahiPublisher*>(userdata);
     pPublisher->EntryGroupCallback(g, state);
 }
 
 void client_callback(AvahiClient *c, AvahiClientState state, AVAHI_GCC_UNUSED void * userdata)
 {
-    ServicePublisher* pPublisher = reinterpret_cast<ServicePublisher*>(userdata);
+    AvahiPublisher* pPublisher = reinterpret_cast<AvahiPublisher*>(userdata);
     pPublisher->ClientCallback(c, state);
 }
 
 namespace pml::dnssd
 {
 
-    void ServicePublisher::EntryGroupCallback(AvahiEntryGroup *pGroup, AvahiEntryGroupState state)
+    void AvahiPublisher::EntryGroupCallback(AvahiEntryGroup *pGroup, AvahiEntryGroupState state)
     {
         for(auto& [sName, info] : m_mServices)
         {
@@ -28,19 +28,19 @@ namespace pml::dnssd
                 switch (state)
                 {
                     case AVAHI_ENTRY_GROUP_ESTABLISHED :
-                        pml::log::log(pml::log::Level::kInfo, "pml::dnssd") << "ServicePublisher: Service '" << sName << "' successfully established." ;
+                        pml::log::log(pml::log::Level::kInfo, "pml::dnssd") << "AvahiPublisher: Service '" << sName << "' successfully established." ;
                         break;
                     case AVAHI_ENTRY_GROUP_COLLISION :
                         Collision(info);
                         break;
                     case AVAHI_ENTRY_GROUP_FAILURE :
-                        pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Entry group failure: " << avahi_strerror(avahi_client_errno(avahi_entry_group_get_client(pGroup))) ;
+                        pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Entry group failure: " << avahi_strerror(avahi_client_errno(avahi_entry_group_get_client(pGroup))) ;
                         break;
                     case AVAHI_ENTRY_GROUP_UNCOMMITED:
-                        pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "ServicePublisher: Service '" << sName << "' uncommited." ;
+                        pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "AvahiPublisher: Service '" << sName << "' uncommited." ;
                         break;
                     case AVAHI_ENTRY_GROUP_REGISTERING:
-                        pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "ServicePublisher: Service '" << sName << "o' registering." ;
+                        pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "AvahiPublisher: Service '" << sName << "o' registering." ;
                         break;
                 }
                 break;
@@ -48,7 +48,7 @@ namespace pml::dnssd
         }
     }
 
-    bool ServicePublisher::AddService(const std::string& sName, const std::string& sService, unsigned short nPort, const std::map<std::string, std::string>& mTxt)
+    bool AvahiPublisher::AddService(const std::string& sName, const std::string& sService, unsigned short nPort, const std::map<std::string, std::string>& mTxt)
     {
         if(m_pClient)
         {
@@ -63,18 +63,18 @@ namespace pml::dnssd
         return false;
     }
 
-    bool ServicePublisher::CreateService(avahiInfo& info)
+    bool AvahiPublisher::CreateService(avahiInfo& info)
     {
-        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Adding service " << info.sName ;
+        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Adding service " << info.sName ;
 
         int ret;
         if(info.pGroup == nullptr)
         {
-            pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Create new entry group";
+            pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Create new entry group";
             info.pGroup = avahi_entry_group_new(m_pClient, entry_group_callback, reinterpret_cast<void*>(this));
             if(info.pGroup == nullptr)
             {
-                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: avahi_entry_group_new() failed: " << avahi_strerror(avahi_client_errno(m_pClient)) ;
+                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: avahi_entry_group_new() failed: " << avahi_strerror(avahi_client_errno(m_pClient)) ;
                 return false;
             }
         }
@@ -84,7 +84,7 @@ namespace pml::dnssd
             AvahiStringList* pList = GetTxtList(info);
             if(!pList)
             {
-                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to create list" ;
+                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to create list" ;
                 return false;
             }    
         
@@ -96,7 +96,7 @@ namespace pml::dnssd
                 }
                 else
                 {
-                    pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to add '" << info.sService << "' service: " << avahi_strerror(ret);
+                    pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to add '" << info.sService << "' service: " << avahi_strerror(ret);
                     return false;
                 }
             }
@@ -104,25 +104,25 @@ namespace pml::dnssd
         }
         if ((ret = avahi_entry_group_commit(info.pGroup)) < 0)
         {
-            pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to commit entry group: " << avahi_strerror(ret);
+            pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to commit entry group: " << avahi_strerror(ret);
             return false;
         }
         return true;
     }
 
-    bool ServicePublisher::Collision(avahiInfo& info)
+    bool AvahiPublisher::Collision(avahiInfo& info)
     {
         /* A service name collision with a local service happened. Let's
         * pick a new name */
         char *n = avahi_alternative_service_name(info.psName);
         avahi_free(info.psName);
         info.psName = n;
-        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Service name collision, renaming service to " << info.sName ;
+        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Service name collision, renaming service to " << info.sName ;
         avahi_entry_group_reset(info.pGroup);
         return CreateService(info);
     }
 
-    void ServicePublisher::Stop()
+    void AvahiPublisher::Stop()
     {
         if(m_pThreadedPoll)
         {
@@ -147,14 +147,14 @@ namespace pml::dnssd
         m_mServices.clear();
     }
 
-    void ServicePublisher::ThreadQuit()
+    void AvahiPublisher::ThreadQuit()
     {
         avahi_threaded_poll_quit(m_pThreadedPoll);
         m_pThreadedPoll = NULL;
         Stop();
     }
 
-    void ServicePublisher::ClientCallback(AvahiClient* pClient, AvahiClientState state)
+    void AvahiPublisher::ClientCallback(AvahiClient* pClient, AvahiClientState state)
     {
         if(pClient)
         {
@@ -162,11 +162,11 @@ namespace pml::dnssd
             switch (state)
             {
             case AVAHI_CLIENT_S_RUNNING:
-                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Client: Running" ;
+                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Client: Running" ;
                 m_pClient = pClient;
                 break;
             case AVAHI_CLIENT_FAILURE:
-                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Client failure: " <<  avahi_strerror(avahi_client_errno(pClient)) ;
+                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Client failure: " <<  avahi_strerror(avahi_client_errno(pClient)) ;
                 ThreadQuit();
                 break;
             case AVAHI_CLIENT_S_COLLISION:
@@ -178,27 +178,27 @@ namespace pml::dnssd
                 * might be caused by a host name change. We need to wait
                 * for our own records to register until the host name is
                 * properly esatblished. */
-                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Client: Collison or registering" ;
+                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Client: Collison or registering" ;
                 for(const auto& [sName, info] : m_mServices)
                 {
                     avahi_entry_group_reset(info.pGroup);
                 }
                 break;
             case AVAHI_CLIENT_CONNECTING:
-                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Client: Connecting" ;
+                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Client: Connecting" ;
             }
         }
     }
 
 
-    bool ServicePublisher::Start()
+    bool AvahiPublisher::Start()
     {
         m_pClient = nullptr;
         int error;
 
         if (!(m_pThreadedPoll = avahi_threaded_poll_new()))
         {
-            pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to create thread poll object." ;
+            pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to create thread poll object." ;
             Stop();
             return false;
         }
@@ -209,27 +209,27 @@ namespace pml::dnssd
         /* Check wether creating the client object succeeded */
         if (!m_pClient)
         {
-            pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to create client: " << avahi_strerror(error) ;
+            pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to create client: " << avahi_strerror(error) ;
             Stop();
             return false;
         }
-        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Started" ;
+        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Started" ;
         
         /* Run the main loop */
         avahi_threaded_poll_start(m_pThreadedPoll);
         return true;
     }
 
-    ServicePublisher::ServicePublisher()=default;
+    AvahiPublisher::AvahiPublisher()=default;
 
-    ServicePublisher::~ServicePublisher()
+    AvahiPublisher::~AvahiPublisher()
     {
         Stop();
     }
 
 
 
-    void ServicePublisher::AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify)
+    void AvahiPublisher::AddTxt(const std::string& sName, const std::string& sKey, const std::string& sValue, bool bModify)
     {
         auto itService= m_mServices.find(sName);
         if(itService != m_mServices.end())
@@ -242,7 +242,7 @@ namespace pml::dnssd
         }
     }
 
-    void ServicePublisher::SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt)
+    void AvahiPublisher::SetTxt(const std::string& sName, const std::map<std::string, std::string>& mTxt)
     {
         auto itService= m_mServices.find(sName);
         if(itService != m_mServices.end())
@@ -257,7 +257,7 @@ namespace pml::dnssd
         }
     }
 
-    void ServicePublisher::RemoveTxt(const std::string& sName, const std::string& sKey, bool bModify)
+    void AvahiPublisher::RemoveTxt(const std::string& sName, const std::string& sKey, bool bModify)
     {
         auto itService= m_mServices.find(sName);
         if(itService != m_mServices.end())
@@ -270,22 +270,22 @@ namespace pml::dnssd
         }
     }
 
-    AvahiStringList* ServicePublisher::GetTxtList(const avahiInfo& info)
+    AvahiStringList* AvahiPublisher::GetTxtList(const avahiInfo& info)
     {
-        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Create string list" ;
+        pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Create string list" ;
         AvahiStringList* pList = nullptr;
         for(const auto& [sKey, sValue] : info.mTxt)
         {
             pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << sKey << "=" << sValue ;
             if(pList == nullptr)
             {
-                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: Create new string list" ;
+                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Create new string list" ;
                 auto sPair = sKey + "="+sValue;
                 pList = avahi_string_list_new(sPair.c_str(),nullptr);
             }
             else
             {
-                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServicePublisher: String list exists" ;
+                pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: String list exists" ;
                 pList = avahi_string_list_add_pair(pList, sKey.c_str(), sValue.c_str());
             }
         }
@@ -293,7 +293,7 @@ namespace pml::dnssd
     }
 
 
-    void ServicePublisher::Modify(const avahiInfo& info)
+    void AvahiPublisher::Modify(const avahiInfo& info)
     {
         pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "Modify" ;
         if(m_pThreadedPoll)
@@ -301,7 +301,7 @@ namespace pml::dnssd
             AvahiStringList* pList = GetTxtList(info);
             if(!pList)
             {
-                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to create list" ;
+                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to create list" ;
             }
             else
             {
@@ -313,7 +313,7 @@ namespace pml::dnssd
                     }
                     else
                     {
-                        pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to update '" << info.sName << "' service: " << avahi_strerror(ret) ;
+                        pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to update '" << info.sName << "' service: " << avahi_strerror(ret) ;
                     }
                 }
                 avahi_string_list_free(pList);
@@ -321,19 +321,19 @@ namespace pml::dnssd
         }
     }
 
-    bool ServicePublisher::RemoveService(const std::string& sName)
+    bool AvahiPublisher::RemoveService(const std::string& sName)
     {
         if(auto itInfo = m_mServices.find(sName); itInfo != m_mServices.end() && m_pClient)
         {
             if(auto nRet = avahi_entry_group_reset(itInfo->second.pGroup); nRet < 0)
             {
-                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to remove '" << itInfo->second.sName << "' service: " << avahi_strerror(nRet) ;
+                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to remove '" << itInfo->second.sName << "' service: " << avahi_strerror(nRet) ;
                 return false;
             }
 
             if(auto nRet = avahi_entry_group_free(itInfo->second.pGroup); nRet < 0)
             {
-                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServicePublisher: Failed to free '" << itInfo->second.sName << "' service: " << avahi_strerror(nRet) ;
+                pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Failed to free '" << itInfo->second.sName << "' service: " << avahi_strerror(nRet) ;
             }
             pml::log::log(pml::log::Level::kInfo, "pml::dnssd") << itInfo->second.sName << " removed";
 
