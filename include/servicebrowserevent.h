@@ -1,16 +1,22 @@
-#pragma once
-#include "dnssddlldefine.h"
+#ifndef PML_DNSSD_SERVICEBROWSEREVENT_H
+#define PML_DNSSD_SERVICEBROWSEREVENT_H
+
 #include <string>
 
-struct dnsInstance;
+#include "dnsddlldefine.h"
 
-class DNSSD_EXPORT ServiceBrowserEvent
+
+namespace pml::dnssd
 {
-    public:
-        ServiceBrowserEvent(){}
-        virtual ~ServiceBrowserEvent(){}
+    class DNSSD_EXPORT ServiceBrowserEvent
+    {
+        public:
+            ServiceBrowserEvent(){}
+            virtual ~ServiceBrowserEvent(){}
 
-        virtual void InstanceResolved(dnsInstance* pInstance){}
-        virtual void AllForNow(const std::string& sService){}
-        virtual void Finished(){}
-};
+            virtual void InstanceResolved(dnsInstance* pInstance){}
+            virtual void AllForNow(const std::string& sService){}
+            virtual void Finished(){}
+    };
+}
+#endif

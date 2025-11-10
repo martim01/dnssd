@@ -41,7 +41,7 @@ bool ServicePublisher::Start()
 {
 
     m_sdRef = 0;
-    Log::Get(Log::LOG_DEBUG) << "BojourPubliser: Start" << endl;
+    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BojourPubliser: Start" << endl;
 
 
     DNSServiceErrorType error;
@@ -64,7 +64,7 @@ bool ServicePublisher::Start()
 
     if (error == kDNSServiceErr_NoError)
     {
-        Log::Get(Log::LOG_DEBUG) << "BojourPubliser: Started" << endl;
+        pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BojourPubliser: Started" << endl;
         m_mClientToFd[m_sdRef] = DNSServiceRefSockFD(m_sdRef);;
 
         thread th(RunSelect, this);
@@ -151,7 +151,7 @@ void ServicePublisher::RunSelect(ServicePublisher* pPublisher)
 		{
             //if(pPublisher->m_pPoster)
             //{
-            //    Log::Get(Log::LOG_DEBUG) << "BonjourBrowser: Finished" << endl;
+            //    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourBrowser: Finished" << endl;
             //    pBrowser->m_pPoster->_Finished();
             //}
             break;
@@ -166,7 +166,7 @@ void ServicePublisher::RunSelect(ServicePublisher* pPublisher)
 		}
 
 
-		Log::Get(Log::LOG_DEBUG) << "BonjourPublisher: Start select: fd =" << pPublisher->m_mClientToFd.size() << " nfds =" << nfds << endl;
+		pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourPublisher: Start select: fd =" << pPublisher->m_mClientToFd.size() << " nfds =" << nfds << endl;
 		struct timeval tv = { 0, 1000 };
 
 		//mDNSPosixGetFDSet(m, &nfds, &readfds, &tv);
@@ -174,7 +174,7 @@ void ServicePublisher::RunSelect(ServicePublisher* pPublisher)
 
 		if ( result > 0 )
 		{
-		    Log::Get(Log::LOG_DEBUG) << "BonjourPublisher: Select done"  << endl;
+		    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "BonjourPublisher: Select done"  << endl;
 		    lock_guard<mutex> lock(pPublisher->m_mutex);
             //
             // While iterating through the loop, the callback functions might delete
@@ -196,7 +196,7 @@ void ServicePublisher::RunSelect(ServicePublisher* pPublisher)
 		}
 		else
 		{
-		    Log::Get(Log::LOG_DEBUG) << "Result = " << result << endl;
+		    pml::log::log(pml::log::Level::kDebug, "pml::dnssd::BonjourBrowser") << "Result = " << result << endl;
 			break;
 		}
         if ( count > 10 )
