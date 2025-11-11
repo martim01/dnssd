@@ -12,32 +12,33 @@
 
 void client_callback(AvahiClient * pClient, AvahiClientState state, AVAHI_GCC_UNUSED void * userdata)
 {
-    pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "avahi browser client_callback";
-    auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
+    pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << "avahi browser client_callback";
+    auto pBrowser = reinterpret_cast<pml::dnssd::ServiceBrowser*>(userdata);
     pBrowser->ClientCallback(pClient, state);
 }
 
 void type_callback(AvahiServiceTypeBrowser* stb, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char* type, const char* domain, AvahiLookupResultFlags flags, void* userdata)
 {
-    pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "avahi browser type_callback";
-    auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
+    pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << "avahi browser type_callback";
+    auto pBrowser = reinterpret_cast<pml::dnssd::ServiceBrowser*>(userdata);
     pBrowser->TypeCallback(interface, protocol, event, type, domain);
 }
 
 void browse_callback(AvahiServiceBrowser *b, AvahiIfIndex interface, AvahiProtocol protocol, AvahiBrowserEvent event, const char *name, const char *type, const char *domain, AVAHI_GCC_UNUSED AvahiLookupResultFlags flags, void* userdata)
 {
-    pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "avahi browser browse_callback";
-    auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
+    pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << "avahi browser browse_callback";
+    auto pBrowser = reinterpret_cast<pml::dnssd::ServiceBrowser*>(userdata);
     pBrowser->BrowseCallback(b, interface, protocol, event, name, type, domain);
 }
 
 void resolve_callback(AvahiServiceResolver *r, AVAHI_GCC_UNUSED AvahiIfIndex interface, AVAHI_GCC_UNUSED AvahiProtocol protocol, AvahiResolverEvent event,const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt,AvahiLookupResultFlags flags,AVAHI_GCC_UNUSED void* userdata)
 {
-    pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "avahi browser reslove_callback";
-    auto pBrowser = reinterpret_cast<ServiceBrowser*>(userdata);
+    pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << "avahi browser reslove_callback";
+    auto pBrowser = reinterpret_cast<pml::dnssd::ServiceBrowser*>(userdata);
     pBrowser->ResolveCallback(r, event, name, type, domain,host_name, address,port,txt);
 
 }
+
 
 
 
@@ -117,7 +118,7 @@ namespace pml::dnssd
             avahi_threaded_poll_free(m_pThreadedPoll);
             m_pThreadedPoll = 0;
 
-            set<shared_ptr<ZCPoster> > setPoster;
+            std::set<std::shared_ptr<ZCPoster> > setPoster;
             for(auto& [key, pPoster] : m_mServiceBrowse)
             {
                 if(setPoster.insert(pPoster).second)
@@ -151,7 +152,7 @@ namespace pml::dnssd
 
         for(auto [key, pService] : m_mServiceBrowse)
         {
-            if(m_mServices.insert(make_pair((key), make_shared<dnsService>(dnsService((key))))).second)
+            if(m_mServices.insert(std::make_pair((key), std::make_shared<dnsService>(dnsService((key))))).second)
             {
                 AvahiServiceBrowser* psb = NULL;
                 /* Create the service browser */
@@ -224,12 +225,12 @@ namespace pml::dnssd
         {
             case AVAHI_BROWSER_NEW:
                 {
-                    string sService(type);
+                    std::string sService(type);
                     pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServiceBrowser: Service '" << type << "' found in domain '" << domain << "'" ;
                     if(auto itServiceBrowse = m_mServiceBrowse.find(sService); itServiceBrowse != m_mServiceBrowse.end())
                     {
                         m_mutex.lock();
-                        if(m_mServices.insert(make_pair(sService, make_shared<dnsService>(dnsService(sService)))).second)
+                        if(m_mServices.insert(std::make_pair(sService, std::make_shared<dnsService>(dnsService(sService)))).second)
                         {
                             AvahiServiceBrowser* psb = NULL;
                             /* Create the service browser */
@@ -279,8 +280,8 @@ namespace pml::dnssd
                 break;
             case AVAHI_BROWSER_NEW:
                 {
-                    string sService(type);
-                    string sName(name);
+                    std::string sService(type);
+                    std::string sName(name);
 
                     pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "ServiceBrowser: (Browser) NEW: service '" << name << "' of type '" << type << "' in domain '" << domain << "'" ;
                     AvahiServiceResolver* pResolver= avahi_service_resolver_new(m_pClient, interface, protocol, name, type, domain, AVAHI_PROTO_INET, (AvahiLookupFlags)0, resolve_callback, reinterpret_cast<void*>(this));
@@ -290,7 +291,7 @@ namespace pml::dnssd
                     }
                     else
                     {
-                        m_mResolvers.insert(make_pair(string(name)+"__"+string(type), pResolver));
+                        m_mResolvers.insert(std::make_pair(std::string(name)+"__"+std::string(type), pResolver));
                         m_nWaitingOn++;
                     }
                 }
@@ -334,15 +335,15 @@ namespace pml::dnssd
         if(pResolver)
         {
             //AvahiLookupResultFlags flags;
-            string sName(name);
-            string sService(type);
-            string sDomain(domain);
+            std::string sName(name);
+            std::string sService(type);
+            std::string sDomain(domain);
             /* Called whenever a service has been resolved successfully or timed out */
             switch (event)
             {
                 case AVAHI_RESOLVER_FAILURE:
                     pml::log::log(pml::log::Level::kError, "pml::dnssd") << "ServiceBrowser: (Resolver) Failed to resolve service '" << name << "' of type '" << type << "' in domain '" << domain << "': " << avahi_strerror(avahi_client_errno(m_pClient)) ;
-                    m_mResolvers.erase(string(name)+"__"+string(type));
+                    m_mResolvers.erase(std::string(name)+"__"+std::string(type));
                     avahi_service_resolver_free(pResolver);
                     break;
                 case AVAHI_RESOLVER_FOUND:
@@ -356,7 +357,7 @@ namespace pml::dnssd
                         auto itInstance = itService->second->mInstances.find(sName); 
                         if(itInstance == itService->second->mInstances.end())
                         {
-                            itInstance = itService->second->mInstances.insert(make_pair(sName, make_shared<dnsInstance>(dnsInstance(sName)))).first;
+                            itInstance = itService->second->mInstances.insert(std::make_pair(sName, std::make_shared<dnsInstance>(dnsInstance(sName)))).first;
                         }
                         else
                         {
@@ -372,9 +373,9 @@ namespace pml::dnssd
 
                         for(AvahiStringList* pIterator = txt; pIterator; pIterator = avahi_string_list_get_next(pIterator))
                         {
-                            string sPair(reinterpret_cast<char*>(avahi_string_list_get_text(pIterator)));
+                            std::string sPair(reinterpret_cast<char*>(avahi_string_list_get_text(pIterator)));
                             size_t nFind = sPair.find("=");
-                            if(nFind != string::npos)
+                            if(nFind != std::string::npos)
                             {
                                 itInstance->second->mTxt[sPair.substr(0,nFind)] = sPair.substr(nFind+1);
                             }
@@ -402,7 +403,7 @@ namespace pml::dnssd
 
         if(m_bFree)
         {
-            m_mResolvers.erase(string(name)+"__"+string(type));
+            m_mResolvers.erase(std::string(name)+"__"+std::string(type));
             avahi_service_resolver_free(pResolver);
             CheckStop();
         }
@@ -444,19 +445,19 @@ namespace pml::dnssd
         }
     }
 
-    map<string, shared_ptr<dnsService> >::const_iterator ServiceBrowser::GetServiceBegin()
+    std::map<std::string, std::shared_ptr<dnsService> >::const_iterator ServiceBrowser::GetServiceBegin()
     {
         std::scoped_lock lock(m_mutex);
         return m_mServices.begin();
     }
 
-    map<string, shared_ptr<dnsService> >::const_iterator ServiceBrowser::GetServiceEnd()
+    std::map<std::string, std::shared_ptr<dnsService> >::const_iterator ServiceBrowser::GetServiceEnd()
     {
         std::scoped_lock lock(m_mutex);
         return m_mServices.end();
     }
 
-    map<string, shared_ptr<dnsService> >::const_iterator ServiceBrowser::FindService(const string& sService)
+    std::map<std::string, std::shared_ptr<dnsService> >::const_iterator ServiceBrowser::FindService(const std::string& sService)
     {
         std::scoped_lock lock(m_mutex);
         return m_mServices.find(sService);

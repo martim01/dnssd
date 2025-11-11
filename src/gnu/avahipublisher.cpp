@@ -6,13 +6,13 @@
 
 void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, AVAHI_GCC_UNUSED void *userdata)
 {
-    AvahiPublisher* pPublisher = reinterpret_cast<AvahiPublisher*>(userdata);
+    auto pPublisher = reinterpret_cast<pml::dnssd::AvahiPublisher*>(userdata);
     pPublisher->EntryGroupCallback(g, state);
 }
 
 void client_callback(AvahiClient *c, AvahiClientState state, AVAHI_GCC_UNUSED void * userdata)
 {
-    AvahiPublisher* pPublisher = reinterpret_cast<AvahiPublisher*>(userdata);
+    auto pPublisher = reinterpret_cast<pml::dnssd::AvahiPublisher*>(userdata);
     pPublisher->ClientCallback(c, state);
 }
 
@@ -37,10 +37,10 @@ namespace pml::dnssd
                         pml::log::log(pml::log::Level::kError, "pml::dnssd") << "AvahiPublisher: Entry group failure: " << avahi_strerror(avahi_client_errno(avahi_entry_group_get_client(pGroup))) ;
                         break;
                     case AVAHI_ENTRY_GROUP_UNCOMMITED:
-                        pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "AvahiPublisher: Service '" << sName << "' uncommited." ;
+                        pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << "AvahiPublisher: Service '" << sName << "' uncommited." ;
                         break;
                     case AVAHI_ENTRY_GROUP_REGISTERING:
-                        pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "AvahiPublisher: Service '" << sName << "o' registering." ;
+                        pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << "AvahiPublisher: Service '" << sName << "o' registering." ;
                         break;
                 }
                 break;
@@ -276,7 +276,7 @@ namespace pml::dnssd
         AvahiStringList* pList = nullptr;
         for(const auto& [sKey, sValue] : info.mTxt)
         {
-            pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << sKey << "=" << sValue ;
+            pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << sKey << "=" << sValue ;
             if(pList == nullptr)
             {
                 pml::log::log(pml::log::Level::kDebug, "pml::dnssd") << "AvahiPublisher: Create new string list" ;
@@ -295,7 +295,7 @@ namespace pml::dnssd
 
     void AvahiPublisher::Modify(const avahiInfo& info)
     {
-        pml::log::log(pml::log::Level::KTrace, "pml::dnssd") << "Modify" ;
+        pml::log::log(pml::log::Level::kTrace, "pml::dnssd") << "Modify" ;
         if(m_pThreadedPoll)
         {
             AvahiStringList* pList = GetTxtList(info);

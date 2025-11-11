@@ -1,5 +1,6 @@
-#ifndef PML_DNSSD_SERVICE_PUBLISHER_H
-#define PML_DNSSD_SERVICE_PUBLISHER_H
+#ifndef PML_DNSSD_AVAHI_PUBLISHER_H
+#define PML_DNSSD_AVAHI_PUBLISHER_H
+
 
 #include <map>
 #include <set>

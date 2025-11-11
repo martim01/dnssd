@@ -1,5 +1,7 @@
 #include "dnssd.h"
 
+#include "servicepublisher.h"
+
 #ifdef _WIN32
 #include "bonjourbrowser.h"
 #include "bonjourpublisher.h"
@@ -7,6 +9,7 @@
 #include "avahibrowser.h"
 #include "avahipublisher.h"
 #endif // __WIN32__
+
 
 namespace pml::dnssd
 {
@@ -37,9 +40,9 @@ namespace pml::dnssd
 
     Publisher::Publisher() :
         #ifdef _WIN32
-            m_pPublisher(std::unique_ptr<ServicePublisher>(new BonjourPublisher()))
+            m_pPublisher(std::make_unique<BonjourPublisher>())
         #else
-            m_pPublisher(std::unique_ptr<ServicePublisher>(new AvahiPublisher()))
+            m_pPublisher(std::make_unique<AvahiPublisher>())
         #endif // _WIN32
     {
     }

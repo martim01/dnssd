@@ -1,6 +1,7 @@
-#ifndef PML_DNSSD_SERVICE_BROWSER_H
-#define PML_DNSSD_SERVICE_BROWSER_H
+#ifndef PML_DNSSD_AVAHI_BROWSER_H
+#define PML_DNSSD_AVAHI_BROWSER_H
 
+#ifdef _GNU
 #include <list>
 #include <map>
 #include <memory>
@@ -89,3 +90,4 @@ namespace pml::dnssd
 }
 
 #endif // PML_DNSSD_SERVICE_BROWSER_H
+#endif // _GNU

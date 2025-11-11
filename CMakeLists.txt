@@ -71,7 +71,7 @@ link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 #linux specific
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	target_compile_definitions(pml_dnssd PRIVATE __GNU__)
+	target_compile_definitions(pml_dnssd PUBLIC _GNU)
 	target_link_libraries(pml_dnssd pthread)
 	target_link_libraries(pml_dnssd avahi-client)
 endif()
