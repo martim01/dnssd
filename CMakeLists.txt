@@ -9,11 +9,14 @@ execute_process(COMMAND ${CMAKE_COMMAND} -DNAMESPACE=dnssd -DMAJOR=${PROJECT_VER
 SET(DIR_BASE ${CMAKE_SOURCE_DIR} CACHE STRING "base location for libraries")
 SET(DIR_LOG ${DIR_BASE}/external/log CACHE STRING "location of pml log")
 
-FetchContent_Declare(log GIT_REPOSITORY "https://github.com/martim01/log.git"  SOURCE_DIR ${DIR_LOG})
-
-FetchContent_GetProperties(log)
-if(NOT log_POPULATED)
-	FetchContent_MakeAvailable(log)
+#Get log
+if(EXISTS ${DIR_LOG}/CMakeLists.txt)
+    message(STATUS "Using local external/log at ${DIR_LOG}")
+    add_subdirectory(${DIR_LOG})
+else()
+    message(STATUS "Fetching external/log into ${DIR_LOG}")
+    FetchContent_Declare(log GIT_REPOSITORY "https://github.com/martim01/log.git" SOURCE_DIR ${DIR_LOG})
+    FetchContent_MakeAvailable(log)
 endif()
 
 list(APPEND DNS_SOURCES "src/dnssd.cpp"  "src/zcposter.cpp")
@@ -80,5 +83,6 @@ set_target_properties(pml_dnssd PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOUR
 
 #linux specific
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	install(TARGETS pml_dnssd LIBRARY DESTINATION /usr/local/lib)
+	set(CMAKE_INSTALL_PREFIX "/usr/local")
+	install(TARGETS pml_dnssd LIBRARY DESTINATION lib)
 endif()
