@@ -12,7 +12,6 @@ SET(DIR_LOG ${DIR_BASE}/external/log CACHE STRING "location of pml log")
 #Get log
 if(EXISTS ${DIR_LOG}/CMakeLists.txt)
     message(STATUS "Using local external/log at ${DIR_LOG}")
-    add_subdirectory(${DIR_LOG})
 else()
     message(STATUS "Fetching external/log into ${DIR_LOG}")
     FetchContent_Declare(log GIT_REPOSITORY "https://github.com/martim01/log.git" SOURCE_DIR ${DIR_LOG})
